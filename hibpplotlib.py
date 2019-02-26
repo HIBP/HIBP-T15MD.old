@@ -887,3 +887,46 @@ def plot_grid_xy(traj_list, r_aim, Btor, Ipl=0.0, legend=True, linestyle_A2='--'
 
     if legend:
         ax1.legend()
+
+#%%
+def plot_geometry_xy(r_aim, rA2, rB2, A2_edges, B2_edges,
+                     tick_width=2, axis_labelsize=18, title_labelsize=18):
+    '''
+    plot geometry configuration in xy
+    :param traj_list: list of trajectories
+    :param r_aim: aim dot coordinates [m]
+    :param A2_edges: A2 edges coordinates [m]
+    :param B2_edges: B2 edges coordinates [m]
+    :param Ebeam: beam energy [keV]
+    :param Btor: toroidal magnetic field [T]
+    :param Ipl: plasma current [A]
+    :return: None
+    '''
+    fig, ax1 = plt.subplots()
+
+    # Grids
+    ax1.grid(True)
+    ax1.grid(which='major', color = 'tab:gray') #draw primary grid
+    ax1.minorticks_on() # make secondary ticks on axes
+    ax1.grid(which='minor', color = 'tab:gray', linestyle = ':') # draw secondary grid
+
+    # Axis
+    ax1.xaxis.set_tick_params(width=tick_width) # increase tick size
+    ax1.yaxis.set_tick_params(width=tick_width)
+    ax1.set_xlabel('X (m)')
+    ax1.set_ylabel('Y (m)')
+    ax1.axis('equal')
+
+    # get T-15 camera and plasma contours
+    plot_geometry(ax1)
+
+    # plot aim dot
+    ax1.plot(r_aim[0,0],r_aim[0,1],'*')
+
+
+    #plot plates
+    ax1.plot(rA2[0], rA2[1], '*', color='k')
+    ax1.plot(A2_edges[0][[0,3],0],A2_edges[0][[0,3],1],  color='k', linewidth = 2)
+    ax1.plot(A2_edges[1][[0,3],0],A2_edges[1][[0,3],1],  color='k', linewidth = 2)
+    ax1.plot(rB2[0], rB2[1], '*', color='k')
+    ax1.fill(B2_edges[0][:,0], B2_edges[0][:,1], fill=False, hatch='//', linewidth = 2)
