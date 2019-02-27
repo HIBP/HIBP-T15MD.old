@@ -60,6 +60,7 @@ def plot_2d(B, points, plane='xy', cutoff=2, n_contours=50):
     :param points: coordinates for points for B vectors to start on (@My english is perfect)
     :return: None
     '''
+    pf_coils = importPFCoils('PFCoils.dat')
     #2d quiver
     # get 2D values from one plane with Y = 0
     fig = plt.figure()
@@ -349,7 +350,7 @@ def easy_plotXZ(tr, r_aim):
 
 #%%
 def plot_fan(traj_list, r_aim, A2_edges, B2_edges,
-             Ebeam, UA2, Btor, Ipl=0.0,
+             Ebeam, UA2, Btor, Ipl,
              tick_width=2, axis_labelsize=18, title_labelsize=18):
     '''
     plot fan of trajectories in xy, xz and zy planes
@@ -412,9 +413,12 @@ def plot_fan(traj_list, r_aim, A2_edges, B2_edges,
     for tr in traj_list:
         if tr.Ebeam == Ebeam and tr.UA2 == UA2:
             #plot plates
-            ax1.plot(A2_edges[0][[0,3],0],A2_edges[0][[0,3],1],  color='k', linewidth = 2)
-            ax1.plot(A2_edges[1][[0,3],0],A2_edges[1][[0,3],1],  color='k', linewidth = 2)
-            ax1.fill(B2_edges[0][:,0], B2_edges[0][:,1], fill=False, hatch='//', linewidth = 2)
+            ax1.plot(A2_edges[0][[0,3],0],A2_edges[0][[0,3],1], 
+                     color='k', linewidth = 2)
+            ax1.plot(A2_edges[1][[0,3],0],A2_edges[1][[0,3],1], 
+                     color='k', linewidth = 2)
+            ax1.fill(B2_edges[0][:,0], B2_edges[0][:,1], fill=False, 
+                     hatch='//', linewidth = 2)
 
             ax1.plot(tr.RV_Prim[:,0], tr.RV_Prim[:,1],color='k')
             ax2.plot(tr.RV_Prim[:,0], tr.RV_Prim[:,2],color='k')
@@ -429,12 +433,11 @@ def plot_fan(traj_list, r_aim, A2_edges, B2_edges,
             last_points = np.array(last_points)
             ax3.plot(last_points[:, 2], last_points[:, 1], '--o', color='r')
 
-    ax1.set_title('E={} keV, UA2={} kV, Btor = {} T, Ipl = {} A'.format(tr.Ebeam,tr.UA2, Btor, Ipl))
-#            ax1.plot(rA2[0], rA2[1], '*')
+    ax1.set_title('E={} keV, UA2={} kV, Btor = {} T, Ipl = {} MA'.format(tr.Ebeam,tr.UA2, Btor, Ipl))
 
 #%%
 def plot_fan_xy(traj_list, r_aim, A2_edges, B2_edges,
-             Ebeam, UA2, Btor, Ipl=0.0,
+             Ebeam, UA2, Btor, Ipl,
              tick_width=2, axis_labelsize=18, title_labelsize=18):
     '''
     plot fan of trajectories in xy
@@ -483,11 +486,11 @@ def plot_fan_xy(traj_list, r_aim, A2_edges, B2_edges,
                 last_points.append(i[-1, :])
             last_points = np.array(last_points)
 
-    ax1.set_title('E={} keV, UA2={} kV, Btor = {} T, Ipl = {} A'.format(tr.Ebeam,tr.UA2, Btor, Ipl))
+    ax1.set_title('E={} keV, UA2={} kV, Btor = {} T, Ipl = {} MA'.format(tr.Ebeam,tr.UA2, Btor, Ipl))
 
 # %%
 def plot_scan(traj_list, r_aim,
-              Ebeam, Btor, Ipl=0.0,
+              Ebeam, Btor, Ipl,
               tick_width=2, axis_labelsize=18, title_labelsize=18):
 
     '''
@@ -542,7 +545,7 @@ def plot_scan(traj_list, r_aim,
     UA2_max = np.amax(np.array(A2list))
     UA2_min = np.amin(np.array(A2list))
 
-    ax1.set_title('Ebeam={} keV, UA2:[{}, {}] Kv, Btor = {} T, Ipl = {} kA'
+    ax1.set_title('Ebeam={} keV, UA2:[{}, {}] Kv, Btor = {} T, Ipl = {} MA'
           .format(Ebeam, UA2_min,  UA2_max,
                   Btor, Ipl))
 
@@ -558,7 +561,7 @@ def plot_scan(traj_list, r_aim,
 
 # %%
 def plot_scan_xy(traj_list, r_aim,
-              Ebeam, Btor, Ipl=0.0,
+              Ebeam, Btor, Ipl,
               tick_width=2, axis_labelsize=18, title_labelsize=18):
 
     '''
@@ -600,7 +603,7 @@ def plot_scan_xy(traj_list, r_aim,
     UA2_max = np.amax(np.array(A2list))
     UA2_min = np.amin(np.array(A2list))
 
-    ax1.set_title('Ebeam={} keV, UA2:[{}, {}] Kv, Btor = {} T, Ipl = {} kA'
+    ax1.set_title('Ebeam={} keV, UA2:[{}, {}] Kv, Btor = {} T, Ipl = {} MA'
           .format(Ebeam, UA2_min,  UA2_max,
                   Btor, Ipl))
 
@@ -611,64 +614,7 @@ def plot_scan_xy(traj_list, r_aim,
             ax1.plot(traj_list[i].RV_Sec[:,0], traj_list[i].RV_Sec[:,1], color='r')
 
 # %%
-def plot_scan(traj_list, r_aim, Ebeam, Btor, Ipl=0.0):
-
-    '''
-    plot scan for one beam with particular energy in 2 planes: xy, xz
-    :param traj_list: list of trajectories
-    :param r_aim: aim dot coordinates [m]
-    :param Ebeam: beam energy [keV]
-    :param Btor: toroidal magnetic field [T]
-    :param Ipl: plasma current [A]
-    :return: None
-    '''
-    # get the list of UA2
-    A2list = []
-    for i in range(len(traj_list)):
-        A2list.append(traj_list[i].UA2)
-
-    #find UA2 max and min
-    UA2_max = np.amax(np.array(A2list))
-    UA2_min = np.amin(np.array(A2list))
-
-#    fig, ax1 = plt.subplots()
-    fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
-
-    ax1.grid(which='major', color = 'tab:gray')
-    ax1.minorticks_on() # make secondary ticks on axes
-    ax1.grid(which='minor', color = 'tab:gray', linestyle = ':') # draw secondary grid
-    plot_geometry(ax1)
-    plt.tick_params(axis='both', which='major', labelsize=16)
-    ax1.xaxis.set_tick_params(width=8)
-    ax1.yaxis.set_tick_params(width=8)
-
-    for i in range(len(traj_list)):
-        if traj_list[i].Ebeam == Ebeam:
-            # plot trajectories
-            ax1.plot(traj_list[i].RV_Prim[:,0], traj_list[i].RV_Prim[:,1], color='k')
-            ax1.plot(traj_list[i].RV_Sec[:,0], traj_list[i].RV_Sec[:,1], color='r')
-
-            ax1.plot(r_aim[0,0],r_aim[0,1],'*')
-
-            ax1.set_xlabel('X (m)')
-            ax1.set_ylabel('Y (m)')
-            ax1.grid(True)
-            ax1.axis('equal')
-            ax1.set_title('Ebeam={} keV, UA2:[{}, {}] Kv, Btor = {} T, Ipl = {} kA'
-                  .format(Ebeam, UA2_min,  UA2_max,
-                          Btor, Ipl))
-
-            ax2.plot(traj_list[i].RV_Prim[:,0], traj_list[i].RV_Prim[:,2], color='k')
-            ax2.plot(traj_list[i].RV_Sec[:,0], traj_list[i].RV_Sec[:,2], color='r')
-
-            ax2.plot(r_aim[0,0],r_aim[0,2],'*')
-
-            ax2.set_xlabel('X (m)')
-            ax2.set_ylabel('Z (m)')
-            ax2.grid(True)
-            ax2.axis('equal')
-# %%
-def plot_grid(traj_list, r_aim, Btor, Ipl=0.0,
+def plot_grid(traj_list, r_aim, Btor, Ipl,
               tick_width=2, axis_labelsize=18, title_labelsize=18,
               linestyle_A2='--', linestyle_E='-',
               marker_A2='*', marker_E='p',
@@ -788,8 +734,8 @@ def plot_grid(traj_list, r_aim, Btor, Ipl=0.0,
     ax1.legend()
 
 #%%
-def plot_grid_xy(traj_list, r_aim, Btor, Ipl=0.0, legend=True, linestyle_A2='--', linestyle_E='-',
-                  marker_A2='*', marker_E='p',
+def plot_grid_xy(traj_list, r_aim, Btor, Ipl, legend=True, linestyle_A2='--', 
+                  linestyle_E='-', marker_A2='*', marker_E='p',
                   traj_color='tab:gray'):
     '''
     plot detector grid in 2 planes: xy, xz

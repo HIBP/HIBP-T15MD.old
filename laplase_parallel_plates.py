@@ -23,7 +23,7 @@ def PlateFlags(upper_cube, lower_cube):
                    (y > upper_cube[0, 1]) & (y < upper_cube[1, 1]) &\
                    (z > upper_cube[0, 2]) & (z < upper_cube[1, 2]):
                        r_rot = Rotate(Rotate(Rotate(np.array([x, y, z]), axis=(0, 1, 0), deg= -plts2_beta), \
-                                      axis=(0, 0, 1), deg= -plts2_alpha), axis=(1, 0, 0), deg= -plts2_beta)
+                                      axis=(0, 0, 1), deg= -plts2_alpha), axis=(1, 0, 0), deg= -plts2_gamma)
                        # define masks for upper and lower plates
                        upper_plate_flag[i,j,k] = (r_rot[0] > -plate_length/2.)&(r_rot[0] < plate_length/2.)& \
                                      (r_rot[2] > -plate_width/2.)&(r_rot[2] < plate_width/2.)&   \
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     plts2_center = np.array([0., 0., 0.]) # plates center
     plts2_alpha = 30. # plates alpha
     plts2_beta = 0. # plates beta
-    plts2_gamma = 0. # plates gamma
+    plts2_gamma = -90. # plates gamma
 
     # define voltages [Volts]
     Uupper_plate = 0.
@@ -190,7 +190,7 @@ if __name__ == '__main__':
 
 # %%
     Ex, Ey, Ez = np.gradient(-1*U, delta) # Ex, Ey, Ez
-    fname='elecfieldA2.dat'
+    fname='elecfieldB2.dat'
     SaveElectricField(fname, Ex, Ey, Ez)
 
 # %%

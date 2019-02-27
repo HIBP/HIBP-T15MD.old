@@ -200,13 +200,14 @@ class traj():
 
 if __name__ == '__main__':
     # toroidal field on axis
-    Btor = 2.0  # [T]
+    Btor = 1.0  # [T]
+    Ipl = -1.0  # Plasma current [MA]
     q = 1.60217662e-19  # electron charge [Co]
     m_Tl = 204.3833 * 1.6605e-27  # Tl ion mass [kg]
 
     # initial beam energy range
     dEbeam = 100.
-    Ebeam_range = np.arange(100.,1000. + dEbeam, dEbeam)  # [keV]
+    Ebeam_range = np.arange(300.,300. + dEbeam, dEbeam)  # [keV]
 
     #A2 plates voltage
     dUA2 = 10.0
@@ -261,26 +262,22 @@ if __name__ == '__main__':
     chamb_ext = [(2.34, -0.46), (2.34, -1.), (2.34, 0.46), (2.34, 0.5)]
 
     '''
-    Plates placing part
-    '''
-    fname = 'elecfieldA2.dat'
-    A2_normals, A2_edges = PlacePlate(fname, rA2)
-    fname = 'elecfieldB2.dat'
-    B2_normals, B2_edges = PlacePlate(fname, rB2)
-
-    '''
     Electric field part
     '''
     fname = 'elecfieldA2.dat'
+    A2_normals, A2_edges = PlacePlate(fname, rA2)
     EA2 = ReadElecField(fname, rA2, angles_prime)
+    
     fname = 'elecfieldB2.dat'
+    B2_normals, B2_edges = PlacePlate(fname, rB2)
     EB2 = ReadElecField(fname, rB2, angles_prime)
+    
     E = [EA2, EB2]
 
     '''
     Magnetic field part
     '''
-    B = ReadMagField('magfieldtor.dat','magfieldpol.dat', Btor)
+    B = ReadMagField('magfieldTor.dat','magfieldPol.dat', 'magfieldPlasma.dat', Btor, Ipl)
 # %%
     ''' Scan cycle '''
     # list of trajectores that hit r_aim
@@ -381,5 +378,7 @@ if __name__ == '__main__':
         print('There is nothing to plot')
 
 # %%
-    plot_grid(traj_list_passed, r_aim, Btor, marker_E='')
+    plot_grid(traj_list_passed, r_aim, Btor, Ipl, marker_E='')
 #    plot_scan(traj_list_passed, r_aim, 220., Btor)
+#    plot_fan(traj_list, r_aim, A2_edges, B2_edges,
+#             Ebeam, UA2, Btor, Ipl)

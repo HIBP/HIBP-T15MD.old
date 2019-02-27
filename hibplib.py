@@ -272,7 +272,7 @@ def ReadElecField(fname, xyz, angles):
     return E
 
 # %%
-def ReadMagField(fnametor, fnamepol, Btor):
+def ReadMagField(fnametor, fnamepol, fnameplasma, Btor, Ipl):
     '''
     read magneticc field values from provided file (should lbe in the same directory)
     return: intrepolator function for field
@@ -282,9 +282,10 @@ def ReadMagField(fnametor, fnamepol, Btor):
         volume_corner1 = [float(i) for i in f.readline().replace(' # volume corner 1\n','').split(' ')]
         volume_corner2 = [float(i) for i in f.readline().replace(' # volume corner 2\n','').split(' ')]
         resolution = float(f.readline().replace(' # resolution\n',''))
-    B_tor = np.loadtxt(fnametor,skiprows=3) * Btor
+    B_tor = np.loadtxt(fnametor,skiprows=3)
     B_pol = np.loadtxt(fnamepol,skiprows=3)
-    B_read = B_tor + B_pol
+    B_pl = np.loadtxt(fnameplasma,skiprows=3)
+    B_read = B_tor*Btor + B_pol  + B_pl*Ipl
     # create grid of points
     grid = np.mgrid[volume_corner1[0]:volume_corner2[0]:resolution,
                     volume_corner1[1]:volume_corner2[1]:resolution,
