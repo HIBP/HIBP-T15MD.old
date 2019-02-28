@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Dat files
+*.dat
+magfield
+
 # C extensions
 *.so
 
