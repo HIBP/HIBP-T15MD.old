@@ -201,6 +201,7 @@ class traj():
 if __name__ == '__main__':
     # toroidal field on axis
     Btor = 1.0  # [T]
+    Ipl = -1.0  # Plasma current [MA]
     q = 1.60217662e-19  # electron charge [Co]
     m_Tl = 204.3833 * 1.6605e-27  # Tl ion mass [kg]
 
@@ -219,7 +220,7 @@ if __name__ == '__main__':
     # alpha and beta angles of primary beamline
     alpha_prim = 0.*(np.pi/180)  # rad
     beta_prim = 0.*(np.pi/180)  # rad
-    gamma_prim = 0.*(np.pi/180)  # rad
+    gamma_prim = -90.*(np.pi/180)  # rad
     angles_prime = np.array([alpha_prim, beta_prim, gamma_prim])
 
     # coordinates of injection pipe [m]
@@ -288,7 +289,7 @@ if __name__ == '__main__':
     '''
     if not 'B' in locals():
         dirname='magfield'
-        B = ReadMagField(Btor, dirname)
+        B = ReadMagField(Btor, Ipl, dirname)
 # %%
     ''' Scan cycle '''
     # list of trajectores that hit r_aim
@@ -389,5 +390,5 @@ if __name__ == '__main__':
         print('There is nothing to plot')
 
 # %%
-    plot_grid(traj_list_passed, r_aim, Btor, marker_E='')
+    plot_grid(traj_list_passed, r_aim, Btor, Ipl, marker_E='')
 #    plot_scan(traj_list_passed, r_aim, 220., Btor)

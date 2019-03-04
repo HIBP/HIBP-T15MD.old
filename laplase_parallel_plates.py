@@ -90,9 +90,9 @@ if __name__ == '__main__':
 
     # define center position
     plts2_center = np.array([0., 0., 0.]) # plates center
-    plts2_alpha = 30. # plates alpha
+    plts2_alpha = 0. # plates alpha
     plts2_beta = 0. # plates beta
-    plts2_gamma = -90. # plates gamma
+    plts2_gamma = 0. # plates gamma
 
     # define voltages [Volts]
     Uupper_plate = 0.
@@ -190,7 +190,7 @@ if __name__ == '__main__':
 
 # %%
     Ex, Ey, Ez = np.gradient(-1*U, delta) # Ex, Ey, Ez
-    fname='elecfieldB2.dat'
+    fname='elecfieldA2.dat'
     SaveElectricField(fname, Ex, Ey, Ez)
 
 # %%

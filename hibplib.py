@@ -273,7 +273,7 @@ def ReadElecField(fname, xyz, angles):
     return E
 
 # %%
-def ReadMagField(Btor,dirname ='magfield'):
+def ReadMagField(Btor,Ipl, dirname ='magfield'):
     '''
     read magnetic field values from provided file (should lbe in the same directory)
     return: intrepolator function for field
@@ -286,9 +286,14 @@ def ReadMagField(Btor,dirname ='magfield'):
                 volume_corner1 = [float(i) for i in f.readline().replace(' # volume corner 1\n','').split(' ')]
                 volume_corner2 = [float(i) for i in f.readline().replace(' # volume corner 2\n','').split(' ')]
                 resolution = float(f.readline().replace(' # resolution\n',''))
-                if 'tor' in filename:
+                if 'Tor' in filename:
                     print('Reading toroidal magnetic field...')
                     B_read = np.loadtxt(dirname + '/' + filename,skiprows=3) * Btor
+
+                elif 'Plasm' in filename:
+                    print('Reading toroidal plasma field...')
+                    B_read = np.loadtxt(dirname + '/' + filename,skiprows=3) * Ipl
+
                 else:
                     print('Reading {} magnetic field...'.format(filename[-7:-4]))
                     B_read = np.loadtxt(dirname + '/' + filename, skiprows=3)
