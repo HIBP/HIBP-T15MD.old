@@ -112,7 +112,7 @@ class traj():
         self.RV_Prim = RV
         self.tag_Prim = tag_column
 
-    def PassSec(self, RV0, r_aim, E, B_interp, eps_xy=5e-3, eps_z=5e-3): # eps_xy=1e-3, eps_z=1e-3
+    def PassSec(self, RV0, r_aim, E, B_interp, eps_xy=2., eps_z=1): # eps_xy=5e-3, eps_z=5e-3
         ''' passing secondary trajectory from initial point RV0 to point r_aim
             with accuracy eps
         '''
@@ -146,7 +146,7 @@ class traj():
                                       chamb_ext[2], chamb_ext[3])):
 #                print('Secondary intersected chamber exit')
                 self.IntersectGeometrySec = True
-#                break
+
 
             if (RV_new[0, 0] > r_aim[0, 0]) & (RV_new[0, 1] < 1.0):
                 # YZ plane
@@ -160,11 +160,11 @@ class traj():
                 RV = np.vstack((RV, RV_new))
                 # check XY plane
                 if (np.linalg.norm(RV_new[0, :2] - r_aim[0, :2]) <= eps_xy):
-#                    print('aim XY!')
+                    print('aim XY!')
                     self.IsAimXY = True
                 # check XZ plane
                 if (np.linalg.norm(RV_new[0, [0, 2]] - r_aim[0, [0, 2]]) <= eps_z):
-#                    print('aim Z!')
+                    print('aim Z!')
                     self.IsAimZ = True
                 break
             else:
@@ -206,30 +206,33 @@ if __name__ == '__main__':
     m_Tl = 204.3833 * 1.6605e-27  # Tl ion mass [kg]
 
     # initial beam energy range
-    dEbeam = 100.
+    dEbeam = 10.
     Ebeam_range = np.arange(300.,300. + dEbeam, dEbeam)  # [keV]
 
     #A2 plates voltage
     dUA2 = 10.0
-    UA2_range = np.arange(-30., 90. + dUA2, dUA2)  # [kV]
+    UA2_range = np.arange(-30., 30. + dUA2, dUA2)  # [kV]
 
     #B2 plates voltage
     UB2 = 5.0  # [kV]
     dUB2 = 15.0  # [kV/m]
 
     # alpha and beta angles of primary beamline
-    alpha_prim = 30.*(np.pi/180)  # rad
+    alpha_prim = 0.*(np.pi/180)  # rad
     beta_prim = 0.*(np.pi/180)  # rad
-    gamma_prim = 0.*(np.pi/180)  # rad
+    gamma_prim = -90.*(np.pi/180)  # rad
     angles_prime = np.array([alpha_prim, beta_prim, gamma_prim])
 
     # coordinates of injection pipe [m]
-    xpatr = 1.5 + 0.726
-    ypatr = 1.064
+#    xpatr = 1.5 + 0.726
+#    ypatr = 1.064
+#    zpatr = 0.0
+    xpatr = 2.45
+    ypatr = 0.4
     zpatr = 0.0
     # distance from injection pipe to Alpha2 plates
     dist_A2 = 0.3  # [m]
-    dist_B2 = 0.5  # [m]
+    dist_B2 = 0.45  # [m]
     # distance from injection pipe to initial piont of trajectory [m]
     dist_0 = 0.7
 
@@ -255,29 +258,38 @@ if __name__ == '__main__':
     dt = 1e-7
 
     r_aim = np.array([[2.5, -0.2, 0.]])
+#    r_aim = np.array([[2.75, -0.5, 0.]])
 
     # chamber entrance coordinates
 #    chamb_ent = [(2.01,1.08),(1.86,1.31),(2.385,0.52),(2.19,0.82)]
     chamb_ent = [(2.01, 1.102), (1.99, 1.265), (2.211, 0.937), (2.339, 0.746)]
     chamb_ext = [(2.34, -0.46), (2.34, -1.), (2.34, 0.46), (2.34, 0.5)]
 
+
+    '''
+    Plates placing part
+    '''
+    fname = 'elecfieldA2.dat'
+    A2_normals, A2_edges = PlacePlate(fname, rA2)
+    fname = 'elecfieldB2.dat'
+    B2_normals, B2_edges = PlacePlate(fname, rB2)
+
+#%%
     '''
     Electric field part
     '''
     fname = 'elecfieldA2.dat'
-    A2_normals, A2_edges = PlacePlate(fname, rA2)
     EA2 = ReadElecField(fname, rA2, angles_prime)
-    
     fname = 'elecfieldB2.dat'
-    B2_normals, B2_edges = PlacePlate(fname, rB2)
     EB2 = ReadElecField(fname, rB2, angles_prime)
-    
     E = [EA2, EB2]
 
     '''
     Magnetic field part
     '''
-    B = ReadMagField('magfieldTor.dat','magfieldPol.dat', 'magfieldPlasma.dat', Btor, Ipl)
+    if not 'B' in locals():
+        dirname='magfield'
+        B = ReadMagField(Btor, Ipl, dirname)
 # %%
     ''' Scan cycle '''
     # list of trajectores that hit r_aim
@@ -300,8 +312,8 @@ if __name__ == '__main__':
                     traj1.IsAimXY, traj1.IsAimZ = False, False
                     traj1.IntersectGeometrySec = False
 
-                    if traj1.IntersectGeometry:
-                        break
+#                    if traj1.IntersectGeometry:
+#                        break
 
                     # find which secondaries are higher/lower than r_aim
                     signs = np.array([np.sign(np.cross(RV[-1, :3], r_aim[0, :])[-1])
@@ -310,11 +322,11 @@ if __name__ == '__main__':
                     are_lower = np.argwhere(signs == 1)
                     if are_higher.shape[0] == 0:
                         print('Aim is too HIGH along Y!')
-#                        traj_list.append(traj1)
+                        traj_list.append(traj1)
                         break
                     elif are_lower.shape[0] == 0:
                         print('Aim is too LOW along Y!')
-#                        traj_list.append(traj1)
+                        traj_list.append(traj1)
                         break
                     else:
                         n = int(are_higher[-1])  # find one which is higher
@@ -362,16 +374,16 @@ if __name__ == '__main__':
                 print('ERROR : ', err)
                 pass
 
-            if traj1.IsAimXY and traj1.IsAimZ:
-                traj_list.append(traj1)
-                print('trajectory saved')
+#            if traj1.IsAimXY and traj1.IsAimZ:
+#            traj_list.append(traj1)
+#                print('trajectory saved')
 
     plt.close('all')
     traj_list_passed = []  # list of trajs that passed geometry limitations
     if len(traj_list) != 0:
         for traj in traj_list:
             if not traj.IntersectGeometrySec:
-#                plot_fan([traj], r_aim, A2_edges, B2_edges, traj.Ebeam, traj.UA2, Btor)
+                plot_fan([traj], r_aim, A2_edges, B2_edges, traj.Ebeam, traj.UA2, Btor)
                 traj_list_passed.append(traj)
         print('found {} trajectories'.format(len(traj_list)))
     else:
@@ -380,5 +392,3 @@ if __name__ == '__main__':
 # %%
     plot_grid(traj_list_passed, r_aim, Btor, Ipl, marker_E='')
 #    plot_scan(traj_list_passed, r_aim, 220., Btor)
-#    plot_fan(traj_list, r_aim, A2_edges, B2_edges,
-#             Ebeam, UA2, Btor, Ipl)
