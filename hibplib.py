@@ -12,7 +12,6 @@ from matplotlib import pyplot as plt
 from collections import defaultdict
 from matplotlib import path
 from scipy.interpolate import RegularGridInterpolator
-import os
 
 # %% Runge-Kutt
 def RungeKutt(q, m, RV, dt, E, B):
@@ -273,47 +272,33 @@ def ReadElecField(fname, xyz, angles):
     return E
 
 # %%
-def ReadMagField(Btor,dirname ='magfield'):
+def ReadMagField(fnametor, fnamepol, fnameplasma, Btor, Ipl):
     '''
-    read magnetic field values from provided file (should lbe in the same directory)
+    read magneticc field values from provided file (should lbe in the same directory)
     return: intrepolator function for field
-    :param dirname: name of directory with magfield dats
+    :param fname: filename
     '''
-    B_full={}
-    for filename in os.listdir(dirname):
-        if filename.endswith(".dat"):
-            with open(dirname + '/' + filename, 'r') as f:
-                volume_corner1 = [float(i) for i in f.readline().replace(' # volume corner 1\n','').split(' ')]
-                volume_corner2 = [float(i) for i in f.readline().replace(' # volume corner 2\n','').split(' ')]
-                resolution = float(f.readline().replace(' # resolution\n',''))
-                if 'tor' in filename:
-                    print('Reading toroidal magnetic field...')
-                    B_read = np.loadtxt(dirname + '/' + filename,skiprows=3) * Btor
-                else:
-                    print('Reading {} magnetic field...'.format(filename[-7:-4]))
-                    B_read = np.loadtxt(dirname + '/' + filename, skiprows=3)
-
-                B_full[filename[-7:-4]] = B_read
-
+    with open(fnametor, 'r') as f:
+        volume_corner1 = [float(i) for i in f.readline().replace(' # volume corner 1\n','').split(' ')]
+        volume_corner2 = [float(i) for i in f.readline().replace(' # volume corner 2\n','').split(' ')]
+        resolution = float(f.readline().replace(' # resolution\n',''))
+    B_tor = np.loadtxt(fnametor,skiprows=3)
+    B_pol = np.loadtxt(fnamepol,skiprows=3)
+    B_pl = np.loadtxt(fnameplasma,skiprows=3)
+    B_read = B_tor*Btor + B_pol  + B_pl*Ipl
     # create grid of points
     grid = np.mgrid[volume_corner1[0]:volume_corner2[0]:resolution,
                     volume_corner1[1]:volume_corner2[1]:resolution,
                     volume_corner1[2]:volume_corner2[2]:resolution]
 
-    B = np.zeros(B_read.shape)
-    for key in B_full.keys():
-        B += B_full[key]
-#
-#    cutoff = 10.0
-#    Babs = np.linalg.norm(B, axis=1)
-#    B[Babs > cutoff] = [np.nan, np.nan, np.nan]
+
     # make an interpolation of B
     x = np.arange(volume_corner1[0], volume_corner2[0], resolution)
     y = np.arange(volume_corner1[1], volume_corner2[1], resolution)
     z = np.arange(volume_corner1[2], volume_corner2[2], resolution)
-    Bx = B[:, 0].reshape(grid.shape[1:])
-    By = B[:, 1].reshape(grid.shape[1:])
-    Bz = B[:, 2].reshape(grid.shape[1:])
+    Bx = B_read[:, 0].reshape(grid.shape[1:])
+    By = B_read[:, 1].reshape(grid.shape[1:])
+    Bz = B_read[:, 2].reshape(grid.shape[1:])
     Bx_interp = RegularGridInterpolator((x, y, z), Bx)
     By_interp = RegularGridInterpolator((x, y, z), By)
     Bz_interp = RegularGridInterpolator((x, y, z), Bz)
