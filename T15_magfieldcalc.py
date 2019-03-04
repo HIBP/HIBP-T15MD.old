@@ -7,9 +7,9 @@ from joblib import Parallel, delayed
 #from itertools import repeat
 import multiprocessing as mp
 import time
-from scipy.interpolate import RegularGridInterpolator
 from hibplib import importPFCoils
 from hibpplotlib import *
+import os
 
 # %% define a fuction to calculate BiotSavart law--------------------------------
 def BiotSavart(points, wires):
@@ -85,11 +85,13 @@ def calcBpol(pf_coils, points, nx=3, ny=3):
     ny - number of filaments along y
     '''
     print('Calculating Poloidal Field')
-    wires = []
-    disc_len = 0.2  # discretisation length for wire [m]
-    for coil in pf_coils.keys():
-        print(coil)
 
+    disc_len = 0.2  # discretisation length for wire [m]
+    B = {}
+    for coil in pf_coils.keys():
+
+        print(coil)
+        wires = []
         xc = pf_coils[coil][0]
         yc = pf_coils[coil][1]
         dx = pf_coils[coil][2]
@@ -123,8 +125,8 @@ def calcBpol(pf_coils, points, nx=3, ny=3):
             # -> y cycle end -------------------------------------------------
 
         # -> x cycle end -----------------------------------------------------
-
-    B = BiotSavart(points, wires)
+        B_coil = BiotSavart(points, wires)
+        B[coil] = B_coil
     return B, wires
 
 # %% Toroidal field calculation
@@ -142,7 +144,8 @@ def calcBtor(points):
     n_z = 4          # number of circuits in toroidal direction
     disc_len = 0.2   # discretisation length for wire [m]
     curr = curr_tot/(n_xy*n_z) # current in one circuit
-    initial_coil_angle = (360/n_coils)*0.5  # initial toroidal angle of the first coil
+    initial_coil_angle = (360/n_coils)*0.5  # initial toroidal angle of
+                                            # the first coil
 
     # get coil inner and outer profile
     filename = 'coildata.dat'
@@ -188,85 +191,62 @@ def calcBtor(points):
     return B, wires
 
 # %% Plasma Current Field
-def ImportJpl(filename):
-    ''' import plasma current distribution from Tokameq file'''
-    with open(filename, 'r') as f:
-        data = f.readlines()
-    f.close()
-    
-    # R coordinate corresponds to X, Z coordinate corresponds to Y
-    NrNz = []
-    for i in data[2].strip().split():
-        if i.isdigit():
-            NrNz.append(i)
-    Nx = int(NrNz[0]) + 1
-    Ny = int(NrNz[1]) + 1
-    
-    for i in range(len(data)):
-        if data[i].strip() == 'Current density J(r,z)':
-            iJ = i
-#            print(iJ)
-
-    x_vals = [float(r) for r in data[iJ+1].strip().split()[1:]]
-    x_vals = np.array(x_vals)
-    
-    J_data = [i.strip().split() for i in data[iJ+2:iJ+2+Ny]]
-    J_vals = []
-    y_vals = []
-    for line in J_data:
-        y_vals.append(float(line[0]))
-        J_vals.append([float(j) for j in line[1:]])
-
-    y_vals = np.array(y_vals)
-    J_vals = np.array(J_vals)
-    return J_vals, x_vals, y_vals
-
-def calcBplasma(points, filename, CurrTot):
-    ''' calculate plasma field in points
-    filename - Tokameq file with Jpl distribution
-    CurrTot - total plasma current in [MA] '''
-    print('Calculating Plasma Field')
-    J_vals, x_vals, y_vals = ImportJpl(filename)
-
-    Jtot = np.sum(J_vals)  # total J, used for normalisation
-    disc_len = 0.2  # discretisation length for wire [m]
-    
-    # define toroidal angle
-    nfi = 40 #number of steps along toroidal angle
+def calcBplasma(points, curr_pl=-1e6):
+    ''' plasma current field calculation
+        curr_pl - plasma current in [A]
+    '''
+    print('Calculating Plasma Current Field')
+    disc_len = 0.2  # discretisation length for a wire [m]
+    nfi = 40 # number of steps along toroidal angle
     dfi = 2*np.pi/nfi
     fi = np.arange(0, 2*np.pi+dfi, dfi)
+    R = 1.5 # tokamak major radius
+    elon = 2
+    # approximate plasma as a round counductor with radius a and create wires on its surface
     wires = []
-    # -> x cycle start ---------------------------------------------------
-    for i in range(x_vals.shape[0]):
-        # single wire is a circle in xz plane
-        # set wire radius as a value from x_vals
-        x = np.cos(fi) * x_vals[i]
-        z = np.sin(fi) * x_vals[i]
-        # -> y cycle start -----------------------------------------------
-        for j in range(y_vals.shape[0]):
-            if J_vals[j,i] != 0.0:
-                # set y value
-                y = np.full_like(x, y_vals[j])
-                # concatenate in one np array
-                new_coil = np.c_[x, y, z]
-                # create new wire object for calculation by Biotsavart script
-                new_w = wire.Wire(path=new_coil, discretization_length=disc_len,
-                                  current=1e6*CurrTot*J_vals[j,i]/Jtot)
-                wires.append(new_w)
+    a = 0.7 # plasma small radius
+    N_a = 5 # number of wires along small radius
+    N_teta = 30 # number of wires in poloidal direction
+
+    dteta = 2*np.pi/N_teta
+    # small radius cycle
+    for ra in np.arange(a/N_a, a+a/N_a, a/N_a):
+        curr = curr_pl*((ra/a)**2)/(N_teta)
+        # poloidal cycle
+        for teta in np.arange(0, 2*np.pi, dteta):
+            r = R + ra*np.cos(teta)
+            x = np.cos(fi) * r
+            z = np.sin(fi) * r
+            y = np.full_like(x, a*np.sin(teta)) * elon
+
+            new_coil = np.c_[x, y, z]
+            # create new wire object for calculation by Biotsavart script
+            new_w = wire.Wire(path=new_coil, discretization_length=disc_len,
+                              current=curr)
+            wires.append(new_w)
 
     B = BiotSavart(points, wires)
     return B, wires
 
 # %%
-def SaveMagneticField(fname, B):
+def SaveMagneticField(fname, B, dirname="magfield"):
     ''' save magnetic field array to file
     '''
-    open(fname, 'w').close()
-    with open(fname, 'w') as myfile: # erases data from file before writing
-        myfile.write('{} {} {} # volume corner 1\n'.format(volume_corner1[0], volume_corner1[1], volume_corner1[2]))
-        myfile.write('{} {} {} # volume corner 2\n'.format(volume_corner2[0], volume_corner2[1], volume_corner2[2]))
+    try:
+        os.mkdir(dirname) # create target Directory
+        print("Directory " , dirname ,  " Created ")
+    except FileExistsError:
+        pass
+
+    open(dirname + '/' + fname, 'w').close()
+    with open(dirname + '/' + fname, 'w') as myfile: # erases data from file before writing
+        myfile.write('{} {} {} # volume corner 1\n'.format(volume_corner1[0],
+                                                           volume_corner1[1],
+                                                           volume_corner1[2]))
+        myfile.write('{} {} {} # volume corner 2\n'.format(volume_corner2[0],
+                                                           volume_corner2[1],
+                                                           volume_corner2[2]))
         myfile.write('{} # resolution\n'.format(resolution))
-#        np.savetxt(fname, X=B)   # fills fname with magnetic field's values !!! losts first two values (does something with them)
         for i in range(B.shape[0]):
             myfile.write('{} {} {}\n'.format(B[i, 0], B[i, 1], B[i, 2]))
     print('Magnetic field saved, ' + fname)
@@ -277,8 +257,8 @@ if __name__ == '__main__':
     pf_coils = importPFCoils('PFCoils.dat')
 
     # Define grid points to caculate B
-    resolution = 0.1    # [m]
-    volume_corner1 = (0.0, -2.5, -0.75) # xmin ymin zmin [m]
+    resolution = 0.05    # [m]
+    volume_corner1 = (0, -3.0, -0.75) # xmin ymin zmin [m]
     volume_corner2 = (3.5, 2.5, 0.75) # xmax ymax zmax [m]
 
     # create grid of points
@@ -290,33 +270,28 @@ if __name__ == '__main__':
     points = np.vstack(map(np.ravel, grid)).T
 
     # calculate B field at given points
-    B_pol, wires_pol = calcBpol(pf_coils, points)
+    B_pol_dict, wires_pol = calcBpol(pf_coils, points)
     B_tor, wires_tor = calcBtor(points)
-    
-    Ipl = 1.0  # Plasma current [MA]
-    B_pl, wires_pl = calcBplasma(points, '2MA.txt', Ipl)
-    
-    wires = wires_pol + wires_tor + wires_pl
+#    B_pl, wires_pl = calcBplasma(points)
+    wires = wires_pol + wires_tor #+ wires_pl
 
-    cutoff = 10.0
-    Babs_tor = np.linalg.norm(B_tor, axis=1)
-    B_tor[Babs_tor > cutoff] = [np.nan, np.nan, np.nan]
-    
-    Babs_pol = np.linalg.norm(B_pol, axis=1)
-    B_pol[Babs_pol > cutoff] = [np.nan, np.nan, np.nan]
-    
-    Babs_pl = np.linalg.norm(B_pl, axis=1)
-    B_pl[Babs_pl > cutoff] = [np.nan, np.nan, np.nan]
+    fname='magfieldtor.dat'
+    SaveMagneticField(fname, B_tor)
+
+    B_check = B_tor # in B we will summatize filed values from all circuits
+
+    for coil in B_pol_dict.keys():
+        fname='magfield{}.dat'.format(coil)
+        SaveMagneticField(fname, B_pol_dict[coil])
+        B_check += B_pol_dict[coil]
+
+#    cutoff = 10.0
+#    Babs = np.linalg.norm(B_check, axis=1)
+#    B_check[Babs > cutoff] = [np.nan, np.nan, np.nan]
 
 # %%
-    fname='magfieldTor.dat'
-    SaveMagneticField(fname, B_tor)
-   
-    fname='magfieldPol.dat'
-    SaveMagneticField(fname, B_pol)
-    
-    fname='magfieldPlasma.dat'
-    SaveMagneticField(fname, B_pl)
+
+
 
 # %%
     # make an interpolation of B
