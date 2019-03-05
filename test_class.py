@@ -112,7 +112,7 @@ class traj():
         self.RV_Prim = RV
         self.tag_Prim = tag_column
 
-    def PassSec(self, RV0, r_aim, E, B_interp, eps_xy=5e-3, eps_z=5e3): # eps_xy=5e-3, eps_z=5e-3
+    def PassSec(self, RV0, r_aim, E, B_interp, eps_xy=5e-3, eps_z=5e-3): # eps_xy=5e-3, eps_z=5e-3
         ''' passing secondary trajectory from initial point RV0 to point r_aim
             with accuracy eps
         '''
@@ -201,20 +201,20 @@ class traj():
 if __name__ == '__main__':
     # toroidal field on axis
     Btor = 1.0  # [T]
-    Ipl = -1.0  # Plasma current [MA]
+    Ipl = 1.0  # Plasma current [MA]
     q = 1.60217662e-19  # electron charge [Co]
     m_Tl = 204.3833 * 1.6605e-27  # Tl ion mass [kg]
 
     # initial beam energy range
-    dEbeam = 10.
-    Ebeam_range = np.arange(300.,300. + dEbeam, dEbeam)  # [keV]
+    dEbeam = 20.
+    Ebeam_range = np.arange(80.,400. + dEbeam, dEbeam)  # [keV]
 
     #A2 plates voltage
     dUA2 = 10.0
-    UA2_range = np.arange(-30., 30. + dUA2, dUA2)  # [kV]
+    UA2_range = np.arange(-30., 60. + dUA2, dUA2)  # [kV]
 
     #B2 plates voltage
-    UB2 = 0.0  # [kV]
+    UB2 = 10.0  # [kV]
     dUB2 = 15.0  # [kV/m]
 
     # alpha and beta angles of primary beamline
@@ -234,7 +234,7 @@ if __name__ == '__main__':
     dist_A2 = 0.3  # [m]
     dist_B2 = 0.45  # [m]
     # distance from injection pipe to initial piont of trajectory [m]
-    dist_0 = 0.7
+    dist_0 = 0.6
 
     # coordinates of Alpha2 plates
     xA2 = xpatr + dist_A2*np.cos(alpha_prim)*np.cos(beta_prim)
@@ -257,30 +257,24 @@ if __name__ == '__main__':
     # timestep [sec]
     dt = 1e-7
 
-#    r_aim = np.array([[2.5, -0.2, 0.]])
-    r_aim = np.array([[2.75, -0.5, 0.]])
+    r_aim = np.array([[2.5, -0.2, 0.]])
+#    r_aim = np.array([[2.75, -0.5, 0.]])
 
     # chamber entrance coordinates
 #    chamb_ent = [(2.01,1.08),(1.86,1.31),(2.385,0.52),(2.19,0.82)]
     chamb_ent = [(2.01, 1.102), (1.99, 1.265), (2.211, 0.937), (2.339, 0.746)]
     chamb_ext = [(2.34, -0.46), (2.34, -1.), (2.34, 0.46), (2.34, 0.5)]
 
-
-    '''
-    Plates placing part
-    '''
-    fname = 'elecfieldA2.dat'
-    A2_normals, A2_edges = PlacePlate(fname, rA2)
-    fname = 'elecfieldB2.dat'
-    B2_normals, B2_edges = PlacePlate(fname, rB2)
-
 #%%
     '''
     Electric field part
     '''
     fname = 'elecfieldA2.dat'
+    A2_normals, A2_edges = PlacePlate(fname, rA2)
     EA2 = ReadElecField(fname, rA2, angles_prime)
+    
     fname = 'elecfieldB2.dat'
+    B2_normals, B2_edges = PlacePlate(fname, rB2)
     EB2 = ReadElecField(fname, rB2, angles_prime)
     E = [EA2, EB2]
 
@@ -326,11 +320,11 @@ if __name__ == '__main__':
                     are_lower = np.argwhere(signs == 1)
                     if are_higher.shape[0] == 0:
                         print('Aim is too HIGH along Y!')
-                        traj_list.append(traj1)
+#                        traj_list.append(traj1)
                         break
                     elif are_lower.shape[0] == 0:
                         print('Aim is too LOW along Y!')
-                        traj_list.append(traj1)
+#                        traj_list.append(traj1)
                         break
                     else:
                         n = int(are_higher[-1])  # find one which is higher
@@ -378,16 +372,16 @@ if __name__ == '__main__':
                 print('ERROR : ', err)
                 pass
 
-#            if traj1.IsAimXY and traj1.IsAimZ:
-#            traj_list.append(traj1)
-#                print('trajectory saved')
+            if traj1.IsAimXY and traj1.IsAimZ:
+                traj_list.append(traj1)
+                print('trajectory saved, UB2={:.2f} kV'.format(traj1.UB2))
 
     plt.close('all')
     traj_list_passed = []  # list of trajs that passed geometry limitations
     if len(traj_list) != 0:
         for traj in traj_list:
             if not traj.IntersectGeometrySec:
-                plot_fan([traj], r_aim, A2_edges, B2_edges, traj.Ebeam, traj.UA2, Btor)
+#                plot_fan([traj], r_aim, A2_edges, B2_edges, traj.Ebeam, traj.UA2, Btor, Ipl)
                 traj_list_passed.append(traj)
         print('found {} trajectories'.format(len(traj_list)))
     else:
@@ -395,4 +389,4 @@ if __name__ == '__main__':
 
 # %%
     plot_grid(traj_list_passed, r_aim, Btor, Ipl, marker_E='')
-#    plot_scan(traj_list_passed, r_aim, 220., Btor)
+#    plot_scan(traj_list_passed, r_aim, 220., Btor, Ipl)

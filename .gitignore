@@ -2,10 +2,18 @@
 __pycache__/
 *.py[cod]
 *$py.class
+JplLoader.py
+PolFieldLoader.py
+Runge-Kutta_test.py
+coildata.py
+laplase_class.py
+test_classOld.py
 
 # Dat files
 *.dat
 magfield
+backup
+*.png
 *.txt
 
 # C extensions

@@ -109,9 +109,9 @@ def importPFCoils(filename):
 def ImportPFcur (filename, pf_coils):
     '''
     Creates dictionary. containing coils names and their currents
-    :param filename: tokomeqs filename
+    :param filename: Tokameqs filename
     :param coils: coil dict (we only take keys)
-    :return:
+    :return: PF dictianary with currents
     '''
     with open(filename, 'r') as f:
         data = f.readlines()  # read tokameq file
@@ -300,7 +300,7 @@ def ReadElecField(fname, xyz, angles):
 def ReadMagField(Btor,Ipl, PF_dict, dirname ='magfield'):
     '''
     read magnetic field values from provided file (should lbe in the same directory)
-    return: intrepolator function for field
+    return: list of intrepolator functions for Bx, By, Bz
     :param dirname: name of directory with magfield dats
     '''
 
@@ -321,7 +321,7 @@ def ReadMagField(Btor,Ipl, PF_dict, dirname ='magfield'):
 
                 else:
                     print('Reading {} magnetic field...'.format(filename[-7:-4]))
-                    Icir = 0.0 #float(PF_dict[filename[-7:-4]])
+                    Icir = float(PF_dict[filename[-7:-4]])
                     B_read = np.loadtxt(dirname + '/' + filename, skiprows=3) * Icir
 
                 B_full[filename[-7:-4]] = B_read
@@ -358,7 +358,7 @@ def ReturnElecField(xyz, Ein, U):
     '''
     take dot and try to interpolate electiric fields in it
     return: interpolated Electric field
-    :param Ein: list of interpolants
+    :param Ein: list of interpolants for Ex, Ey, Ez
     '''
     Eout = np.zeros(3)
     for i in range(len(Ein)):

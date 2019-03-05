@@ -108,8 +108,8 @@ def calcBpol(pf_coils, points, nx=3, ny=3):
             # single wire is a circle in xz plane
             # set wire radius
             r = xc + dx/2 - k_x*dx/(nx-1)
-            x = np.cos(fi) * r
-            z = np.sin(fi) * r
+            x = np.sin(fi) * r
+            z = np.cos(fi) * r
 
             # -> y cycle start -----------------------------------------------
             for k_y in range(0, ny):
@@ -242,8 +242,8 @@ def calcBplasma(points, filename, CurrTot):
     for i in range(x_vals.shape[0]):
         # single wire is a circle in xz plane
         # set wire radius as a value from x_vals
-        x = np.cos(fi) * x_vals[i]
-        z = np.sin(fi) * x_vals[i]
+        x = np.sin(fi) * x_vals[i]
+        z = np.cos(fi) * x_vals[i]
         # -> y cycle start -----------------------------------------------
         for j in range(y_vals.shape[0]):
             if J_vals[j,i] != 0.0:
@@ -291,13 +291,12 @@ if __name__ == '__main__':
         except NameError:
             print('\nNo previous magnetic field found')
 
-
         Btor = 1.0 # Toroidal field [Tl]
         Ipl = 1.0  # Plasma current [MA]
 
         # Define grid points to caculate B
-        resolution = 0.05    # [m]
-        volume_corner1 = (0, -3.0, -0.75) # xmin ymin zmin [m]
+        resolution = 0.1    # [m]
+        volume_corner1 = (0, -2.0, -0.75) # xmin ymin zmin [m]
         volume_corner2 = (3.5, 2.5, 0.75) # xmax ymax zmax [m]
 
         # create grid of points
@@ -357,10 +356,6 @@ if __name__ == '__main__':
 #    cutoff = 10.0
 #    Babs = np.linalg.norm(B_check, axis=1)
 #    B_check[Babs > cutoff] = [np.nan, np.nan, np.nan]
-
-# %%
-
-
 
 # %%
     # make an interpolation of B
