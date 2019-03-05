@@ -112,7 +112,7 @@ class traj():
         self.RV_Prim = RV
         self.tag_Prim = tag_column
 
-    def PassSec(self, RV0, r_aim, E, B_interp, eps_xy=2., eps_z=1): # eps_xy=5e-3, eps_z=5e-3
+    def PassSec(self, RV0, r_aim, E, B_interp, eps_xy=5e-3, eps_z=5e3): # eps_xy=5e-3, eps_z=5e-3
         ''' passing secondary trajectory from initial point RV0 to point r_aim
             with accuracy eps
         '''
@@ -160,11 +160,11 @@ class traj():
                 RV = np.vstack((RV, RV_new))
                 # check XY plane
                 if (np.linalg.norm(RV_new[0, :2] - r_aim[0, :2]) <= eps_xy):
-                    print('aim XY!')
+#                    print('aim XY!')
                     self.IsAimXY = True
                 # check XZ plane
                 if (np.linalg.norm(RV_new[0, [0, 2]] - r_aim[0, [0, 2]]) <= eps_z):
-                    print('aim Z!')
+#                    print('aim Z!')
                     self.IsAimZ = True
                 break
             else:
@@ -214,22 +214,22 @@ if __name__ == '__main__':
     UA2_range = np.arange(-30., 30. + dUA2, dUA2)  # [kV]
 
     #B2 plates voltage
-    UB2 = 5.0  # [kV]
+    UB2 = 0.0  # [kV]
     dUB2 = 15.0  # [kV/m]
 
     # alpha and beta angles of primary beamline
-    alpha_prim = 0.*(np.pi/180)  # rad
+    alpha_prim = 30.*(np.pi/180)  # rad
     beta_prim = 0.*(np.pi/180)  # rad
     gamma_prim = -90.*(np.pi/180)  # rad
     angles_prime = np.array([alpha_prim, beta_prim, gamma_prim])
 
     # coordinates of injection pipe [m]
-#    xpatr = 1.5 + 0.726
-#    ypatr = 1.064
-#    zpatr = 0.0
-    xpatr = 2.45
-    ypatr = 0.4
+    xpatr = 1.5 + 0.726
+    ypatr = 1.064
     zpatr = 0.0
+#    xpatr = 2.45
+#    ypatr = 0.4
+#    zpatr = 0.0
     # distance from injection pipe to Alpha2 plates
     dist_A2 = 0.3  # [m]
     dist_B2 = 0.45  # [m]
@@ -257,8 +257,8 @@ if __name__ == '__main__':
     # timestep [sec]
     dt = 1e-7
 
-    r_aim = np.array([[2.5, -0.2, 0.]])
-#    r_aim = np.array([[2.75, -0.5, 0.]])
+#    r_aim = np.array([[2.5, -0.2, 0.]])
+    r_aim = np.array([[2.75, -0.5, 0.]])
 
     # chamber entrance coordinates
 #    chamb_ent = [(2.01,1.08),(1.86,1.31),(2.385,0.52),(2.19,0.82)]
@@ -287,9 +287,13 @@ if __name__ == '__main__':
     '''
     Magnetic field part
     '''
+    pf_coils = importPFCoils('PFCoils.dat')
+
+    PF_dict = ImportPFcur('{}MA_sn.txt'.format(int(abs(Ipl))), pf_coils)
     if not 'B' in locals():
         dirname='magfield'
-        B = ReadMagField(Btor, Ipl, dirname)
+        B = ReadMagField(Btor, Ipl, PF_dict, dirname)
+
 # %%
     ''' Scan cycle '''
     # list of trajectores that hit r_aim

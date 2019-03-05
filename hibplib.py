@@ -8,7 +8,6 @@ HIBP lib
 """
 
 import numpy as np
-from matplotlib import pyplot as plt
 from collections import defaultdict
 from matplotlib import path
 from scipy.interpolate import RegularGridInterpolator
@@ -106,6 +105,31 @@ def importPFCoils(filename):
             key, val = lineList[0], tuple([float(i) for i in lineList[1:]])
             d[key] = val
     return d
+
+def ImportPFcur (filename, pf_coils):
+    '''
+    Creates dictionary. containing coils names and their currents
+    :param filename: tokomeqs filename
+    :param coils: coil dict (we only take keys)
+    :return:
+    '''
+    with open(filename, 'r') as f:
+        data = f.readlines()  # read tokameq file
+    PF_dict = {}              # Here we will store coils names and currents
+    pf_names = list(pf_coils) # get coils names
+    l = 0 # will be used for getting correct coil name
+    for i in range(len(data)):
+        if data[i].strip() == 'External currents:':
+            k = i + 2  # skip 2 lines and read from the third
+            break
+    while float(data[k].strip().split()[3]) != 0:
+        key = pf_names[l]
+        val = data[k].strip().split()[3]
+        PF_dict[key] = val
+        k += 1
+        l += 1
+
+    return PF_dict
 
 # %%
 def Translate(input_array, xyz):
@@ -273,12 +297,13 @@ def ReadElecField(fname, xyz, angles):
     return E
 
 # %%
-def ReadMagField(Btor,Ipl, dirname ='magfield'):
+def ReadMagField(Btor,Ipl, PF_dict, dirname ='magfield'):
     '''
     read magnetic field values from provided file (should lbe in the same directory)
     return: intrepolator function for field
     :param dirname: name of directory with magfield dats
     '''
+
     B_full={}
     for filename in os.listdir(dirname):
         if filename.endswith(".dat"):
@@ -286,16 +311,17 @@ def ReadMagField(Btor,Ipl, dirname ='magfield'):
                 volume_corner1 = [float(i) for i in f.readline().replace(' # volume corner 1\n','').split(' ')]
                 volume_corner2 = [float(i) for i in f.readline().replace(' # volume corner 2\n','').split(' ')]
                 resolution = float(f.readline().replace(' # resolution\n',''))
-                if 'Tor' in filename:
+                if 'Tor' in filename and Btor != 0:
                     print('Reading toroidal magnetic field...')
                     B_read = np.loadtxt(dirname + '/' + filename,skiprows=3) * Btor
 
                 elif 'Plasm' in filename:
-                    print('Reading toroidal plasma field...')
+                    print('Reading plasma field...')
                     B_read = np.loadtxt(dirname + '/' + filename,skiprows=3) * Ipl
 
                 else:
                     print('Reading {} magnetic field...'.format(filename[-7:-4]))
+                    Icir = 0.0 #float(PF_dict[filename[-7:-4]])
                     B_read = np.loadtxt(dirname + '/' + filename, skiprows=3) * Icir
 
                 B_full[filename[-7:-4]] = B_read

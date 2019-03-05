@@ -284,7 +284,7 @@ def SaveMagneticField(fname, B, dirname="magfield"):
 # %%
 if __name__ == '__main__':
 
-    if str(input("Recalculate magnetic fields [y/n]? ")) == 'y':
+    if input("Recalculate magnetic fields [y/n]? ") == 'y':
         try:
             del B # delete previous magnetic field to avoid m
             print('\nDeleted previous magnetic field')
@@ -309,7 +309,7 @@ if __name__ == '__main__':
         points = np.vstack(map(np.ravel, grid)).T
 
         print('\n\nCalculating magnetic field with folowing params:\n' +
-               ' Btor = {} [Tl]/n Ipl = {} [MA]\n'.format(Btor,Ipl)  +
+               ' Btor = {} [T]\n Ipl = {} [MA]\n'.format(Btor,Ipl)  +
                ' resolution = {}\n'.format(resolution) +
                ' volume_corner1 = {} [m]\n'.format(volume_corner1) +
                ' volume_corner2 = {} [m]\n'.format(volume_corner2))
@@ -318,8 +318,8 @@ if __name__ == '__main__':
         # calculate B field at given points
         B_tor, wires_tor = calcBtor(points)
 
-        tokomeq_file = '1MA_sn.txt' # Txt with plasma current calculated in Tokomeq
-        B_pl, wires_pl = calcBplasma(points, tokomeq_file, Ipl)
+        tokameq_file = '1MA_sn.txt' # Txt with plasma current calculated in Tokameq
+        B_pl, wires_pl = calcBplasma(points, tokameq_file, Ipl)
 
         pf_coils = importPFCoils('PFCoils.dat')
         B_pol_dict, wires_pol = calcBpol(pf_coils, points)
@@ -336,7 +336,7 @@ if __name__ == '__main__':
         fname='magfieldTor.dat'
         SaveMagneticField(fname, B_tor)
 
-        fname='magfieldPlasm{}.dat'.format(tokomeq_file[13:16])
+        fname='magfieldPlasm{}.dat'.format(tokameq_file[13:16])
         SaveMagneticField(fname, B_pl)
 
         B_check = B_tor*Btor + B_pl*Ipl # in B we will summatize filed values from all circuits
@@ -349,7 +349,7 @@ if __name__ == '__main__':
             B_check += B_pol_dict[coil]
 
         print('\n\nCalculated magnetic field with folowing params:\n' +
-              ' Btor = {} [Tl]/n Ipl = {} [MA]\n'.format(Btor,Ipl)  +
+              ' Btor = {} [T]\n Ipl = {} [MA]\n'.format(Btor,Ipl)  +
               ' resolution = {}\n'.format(resolution) +
               ' volume_corner1 = {} [m]\n'.format(volume_corner1) +
               ' volume_corner2 = {} [m]\n'.format(volume_corner2))
