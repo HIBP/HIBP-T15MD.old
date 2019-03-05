@@ -228,7 +228,7 @@ def SaveTrajList(traj_list, Btor, Ipl, dirname='output'):
     with open(fname, 'wb') as f:
         pc.dump(traj_list, f, -1)
 
-    print(fname + ' ***SAVED')
+    print('\nSAVED LIST: \n' + fname)
 
     return
 
@@ -244,18 +244,18 @@ def ReadTrajList(fname):
 
 if __name__ == '__main__':
     # toroidal field on axis
-    Btor = 1.0  # [T]
-    Ipl = 1.0  # Plasma current [MA]
+    Btor = 2.0  # [T]
+    Ipl = 2.0  # Plasma current [MA]
     q = 1.60217662e-19  # electron charge [Co]
     m_Tl = 204.3833 * 1.6605e-27  # Tl ion mass [kg]
 
     # initial beam energy range
-    dEbeam = 20.
-    Ebeam_range = np.arange(80.,400. + dEbeam, dEbeam)  # [keV]
+    dEbeam = 80.
+    Ebeam_range = np.arange(300.,1000. + dEbeam, dEbeam)  # [keV]
 
     #A2 plates voltage
-    dUA2 = 10.0
-    UA2_range = np.arange(-30., 60. + dUA2, dUA2)  # [kV]
+    dUA2 = 40.0
+    UA2_range = np.arange(-120., 320. + dUA2, dUA2)  # [kV]
 
     #B2 plates voltage
     UB2 = 10.0  # [kV]

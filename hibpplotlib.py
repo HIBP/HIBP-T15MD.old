@@ -360,7 +360,7 @@ def plot_fan(traj_list, r_aim, A2_edges, B2_edges,
     :param B2_edges: B2 edges coordinates [m]
     :param Ebeam: beam energy [keV]
     :param Btor: toroidal magnetic field [T]
-    :param Ipl: plasma current [A]
+    :param Ipl: plasma current [MA]
     :return: None
     '''
 
@@ -447,7 +447,7 @@ def plot_fan_xy(traj_list, r_aim, A2_edges, B2_edges,
     :param B2_edges: B2 edges coordinates [m]
     :param Ebeam: beam energy [keV]
     :param Btor: toroidal magnetic field [T]
-    :param Ipl: plasma current [A]
+    :param Ipl: plasma current [MA]
     :return: None
     '''
     fig, ax1 = plt.subplots()
@@ -499,7 +499,7 @@ def plot_scan(traj_list, r_aim,
     :param r_aim: aim dot coordinates [m]
     :param Ebeam: beam energy [keV]
     :param Btor: toroidal magnetic field [T]
-    :param Ipl: plasma current [A]
+    :param Ipl: plasma current [MA]
     :return: None
     '''
 
@@ -545,7 +545,7 @@ def plot_scan(traj_list, r_aim,
     UA2_max = np.amax(np.array(A2list))
     UA2_min = np.amin(np.array(A2list))
 
-    ax1.set_title('Ebeam={} keV, UA2:[{}, {}] Kv, Btor = {} T, Ipl = {} MA'
+    ax1.set_title('Ebeam={} keV, UA2:[{}, {}] kV, Btor = {} T, Ipl = {} MA'
           .format(Ebeam, UA2_min,  UA2_max,
                   Btor, Ipl))
 
@@ -570,7 +570,7 @@ def plot_scan_xy(traj_list, r_aim,
     :param r_aim: aim dot coordinates [m]
     :param Ebeam: beam energy [keV]
     :param Btor: toroidal magnetic field [T]
-    :param Ipl: plasma current [A]
+    :param Ipl: plasma current [MA]
     :return: None
     '''
 
@@ -603,7 +603,7 @@ def plot_scan_xy(traj_list, r_aim,
     UA2_max = np.amax(np.array(A2list))
     UA2_min = np.amin(np.array(A2list))
 
-    ax1.set_title('Ebeam={} keV, UA2:[{}, {}] Kv, Btor = {} T, Ipl = {} MA'
+    ax1.set_title('Ebeam={} keV, UA2:[{}, {}] kV, Btor = {} T, Ipl = {} MA'
           .format(Ebeam, UA2_min,  UA2_max,
                   Btor, Ipl))
 
@@ -624,7 +624,7 @@ def plot_grid(traj_list, r_aim, Btor, Ipl,
     :param traj_list: list of trajectories
     :param r_aim: aim dot coordinates [m]
     :param Btor: toroidal magnetic field [T]
-    :param Ipl: plasma current [A]
+    :param Ipl: plasma current [MA]
     :return: None
     '''
 
@@ -679,7 +679,7 @@ def plot_grid(traj_list, r_aim, Btor, Ipl,
     UA2_max = np.amax(np.array(A2list))
     UA2_min = np.amin(np.array(A2list))
 
-    ax1.set_title('Ebeam:[{}, {}] keV, UA2:[{}, {}] Kv, Btor = {} T, Ipl = {} kA'
+    ax1.set_title('Ebeam:[{}, {}] keV, UA2:[{}, {}] kV, Btor = {} T, Ipl = {} MA'
                   .format(traj_list[0].Ebeam, traj_list[-1].Ebeam,
                          UA2_min,  UA2_max,
                           Btor, Ipl))
@@ -742,7 +742,7 @@ def plot_grid_xy(traj_list, r_aim, Btor, Ipl, legend=True, linestyle_A2='--',
     :param traj_list: list of trajectories
     :param r_aim: aim dot coordinates [m]
     :param Btor: toroidal magnetic field [T]
-    :param Ipl: plasma current [A]
+    :param Ipl: plasma current [MA]
     :return: grid figure
     '''
 
@@ -787,7 +787,7 @@ def plot_grid_xy(traj_list, r_aim, Btor, Ipl, legend=True, linestyle_A2='--',
     UA2_max = np.amax(np.array(A2list))
     UA2_min = np.amin(np.array(A2list))
 
-    ax1.set_title('Ebeam:[{}, {}] keV, UA2:[{}, {}] Kv, Btor = {} T, Ipl = {} kA'
+    ax1.set_title('Ebeam:[{}, {}] keV, UA2:[{}, {}] kV, Btor = {} T, Ipl = {} MA'
                   .format(traj_list[0].Ebeam, traj_list[-1].Ebeam,
                          UA2_min,  UA2_max,
                           Btor, Ipl))
