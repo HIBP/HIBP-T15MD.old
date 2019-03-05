@@ -296,7 +296,7 @@ def ReadMagField(Btor,Ipl, dirname ='magfield'):
 
                 else:
                     print('Reading {} magnetic field...'.format(filename[-7:-4]))
-                    B_read = np.loadtxt(dirname + '/' + filename, skiprows=3)
+                    B_read = np.loadtxt(dirname + '/' + filename, skiprows=3) * Icir
 
                 B_full[filename[-7:-4]] = B_read
 

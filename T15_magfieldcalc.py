@@ -96,8 +96,7 @@ def calcBpol(pf_coils, points, nx=3, ny=3):
         yc = pf_coils[coil][1]
         dx = pf_coils[coil][2]
         dy = pf_coils[coil][3]
-#        curr_tot = -1*pf_coils[coil][4]*1e6/pf_coils[coil][5]
-        curr_tot = -1*pf_coils[coil][4]*1e6 # Total Current [A]
+        curr_tot = 1e6 # Total Current [A]
         curr = curr_tot/(nx*ny)
         # define toroidal angle
         nfi = 40 #number of steps along toroidal angle
@@ -195,7 +194,6 @@ def ImportJpl(filename):
     ''' import plasma current distribution from Tokameq file'''
     with open(filename, 'r') as f:
         data = f.readlines()
-    f.close()
 
     # R coordinate corresponds to X, Z coordinate corresponds to Y
     NrNz = []
@@ -266,7 +264,7 @@ def SaveMagneticField(fname, B, dirname="magfield"):
     '''
     try:
         os.mkdir(dirname) # create target Directory
-        print("Directory " , dirname ,  " Created ")
+        print("Directory " , dirname ,  " created ")
     except FileExistsError:
         pass
 
@@ -286,55 +284,75 @@ def SaveMagneticField(fname, B, dirname="magfield"):
 # %%
 if __name__ == '__main__':
 
-    pf_coils = importPFCoils('PFCoils.dat')
-
-    # Define grid points to caculate B
-    resolution = 0.05    # [m]
-    volume_corner1 = (0, -3.0, -0.75) # xmin ymin zmin [m]
-    volume_corner2 = (3.5, 2.5, 0.75) # xmax ymax zmax [m]
-
-    # create grid of points
-    grid = np.mgrid[volume_corner1[0]:volume_corner2[0]:resolution,
-                    volume_corner1[1]:volume_corner2[1]:resolution,
-                    volume_corner1[2]:volume_corner2[2]:resolution]
-
-    # create list of grid points
-    points = np.vstack(map(np.ravel, grid)).T
-
-    # calculate B field at given points
-    B_pol_dict, wires_pol = calcBpol(pf_coils, points)
-
-    Btor = 1.0
-    B_tor, wires_tor = calcBtor(points)
-
-    Ipl = 1.0  # Plasma current [MA]
-    tokomeq_file = '2MA.txt' # Txt with plasma current calculated in Tokomeq
-    B_pl, wires_pl = calcBplasma(points, tokomeq_file, Ipl)
-
-    wires = wires_pol + wires_tor + wires_pl
-
-    cutoff = 10.0
-    Babs_tor = np.linalg.norm(B_tor, axis=1)
-    B_tor[Babs_tor > cutoff] = [np.nan, np.nan, np.nan]
+    if str(input("Recalculate magnetic fields [y/n]? ")) == 'y':
+        try:
+            del B # delete previous magnetic field to avoid m
+            print('\nDeleted previous magnetic field')
+        except NameError:
+            print('\nNo previous magnetic field found')
 
 
-    Babs_pl = np.linalg.norm(B_pl, axis=1)
-    B_pl[Babs_pl > cutoff] = [np.nan, np.nan, np.nan]
+        Btor = 1.0 # Toroidal field [Tl]
+        Ipl = 1.0  # Plasma current [MA]
 
-    fname='magfieldTor.dat'
-    SaveMagneticField(fname, B_tor)
+        # Define grid points to caculate B
+        resolution = 0.05    # [m]
+        volume_corner1 = (0, -3.0, -0.75) # xmin ymin zmin [m]
+        volume_corner2 = (3.5, 2.5, 0.75) # xmax ymax zmax [m]
 
-    fname='magfieldPlasm{}.dat'.format(tokomeq_file[:3])
-    SaveMagneticField(fname, B_pl)
+        # create grid of points
+        grid = np.mgrid[volume_corner1[0]:volume_corner2[0]:resolution,
+                        volume_corner1[1]:volume_corner2[1]:resolution,
+                        volume_corner1[2]:volume_corner2[2]:resolution]
 
-    B_check = B_tor*Btor + B_pl*Ipl # in B we will summatize filed values from all circuits
+        # create list of grid points
+        points = np.vstack(map(np.ravel, grid)).T
 
-    for coil in B_pol_dict.keys():
-        Babs_pol = np.linalg.norm(B_pol_dict[coil], axis=1)
-        B_pol_dict[coil][Babs_pol > cutoff] = [np.nan, np.nan, np.nan]
-        fname='magfield{}.dat'.format(coil)
-        SaveMagneticField(fname, B_pol_dict[coil])
-        B_check += B_pol_dict[coil]
+        print('\n\nCalculating magnetic field with folowing params:\n' +
+               ' Btor = {} [Tl]/n Ipl = {} [MA]\n'.format(Btor,Ipl)  +
+               ' resolution = {}\n'.format(resolution) +
+               ' volume_corner1 = {} [m]\n'.format(volume_corner1) +
+               ' volume_corner2 = {} [m]\n'.format(volume_corner2))
+
+
+        # calculate B field at given points
+        B_tor, wires_tor = calcBtor(points)
+
+        tokomeq_file = '1MA_sn.txt' # Txt with plasma current calculated in Tokomeq
+        B_pl, wires_pl = calcBplasma(points, tokomeq_file, Ipl)
+
+        pf_coils = importPFCoils('PFCoils.dat')
+        B_pol_dict, wires_pol = calcBpol(pf_coils, points)
+
+#        wires = wires_pol + wires_tor + wires_pl
+
+        cutoff = 10.0
+        Babs_tor = np.linalg.norm(B_tor, axis=1)
+        B_tor[Babs_tor > cutoff] = [np.nan, np.nan, np.nan]
+
+        Babs_pl = np.linalg.norm(B_pl, axis=1)
+        B_pl[Babs_pl > cutoff] = [np.nan, np.nan, np.nan]
+
+        fname='magfieldTor.dat'
+        SaveMagneticField(fname, B_tor)
+
+        fname='magfieldPlasm{}.dat'.format(tokomeq_file[13:16])
+        SaveMagneticField(fname, B_pl)
+
+        B_check = B_tor*Btor + B_pl*Ipl # in B we will summatize filed values from all circuits
+
+        for coil in B_pol_dict.keys():
+            Babs_pol = np.linalg.norm(B_pol_dict[coil], axis=1)
+            B_pol_dict[coil][Babs_pol > cutoff] = [np.nan, np.nan, np.nan]
+            fname='magfield{}.dat'.format(coil)
+            SaveMagneticField(fname, B_pol_dict[coil])
+            B_check += B_pol_dict[coil]
+
+        print('\n\nCalculated magnetic field with folowing params:\n' +
+              ' Btor = {} [Tl]/n Ipl = {} [MA]\n'.format(Btor,Ipl)  +
+              ' resolution = {}\n'.format(resolution) +
+              ' volume_corner1 = {} [m]\n'.format(volume_corner1) +
+              ' volume_corner2 = {} [m]\n'.format(volume_corner2))
 
 #    cutoff = 10.0
 #    Babs = np.linalg.norm(B_check, axis=1)
