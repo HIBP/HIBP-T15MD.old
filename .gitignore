@@ -13,6 +13,7 @@ test_classOld.py
 *.dat
 magfield
 backup
+output
 *.png
 *.txt
 

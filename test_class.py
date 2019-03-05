@@ -3,9 +3,11 @@ import matplotlib.pyplot as plt
 from matplotlib import path
 from matplotlib.patches import Rectangle
 from hibplib import *
+import pickle as pc
+import os
 
 # %% define class for trajectories
-class traj():
+class Traj():
     def __init__(self, q, m, Ebeam, r0, alpha, beta, UA2=0.0, UB2=0.0, dt=1e-7):
         ''' class for trajectories
         q - particle charge [Co]
@@ -196,6 +198,48 @@ class traj():
         self.Fan = list_sec
 
 # %%
+def SaveTrajList(traj_list, Btor, Ipl, dirname='output'):
+    ''' function saves list of Traj objects to pickle file
+    :param traj_list: list of trajectories
+    '''
+    if len(traj_list) == 0:
+        print('traj_list empty!')
+        return
+
+    Ebeam_list = []
+    UA2_list = []
+
+    for traj in traj_list:
+        Ebeam_list.append(traj.Ebeam)
+        UA2_list.append(traj.UA2)
+
+    dirname = dirname + '/' + 'B{}_I{}'.format(int(Btor), int(Ipl))
+    try:
+        os.mkdir(dirname) # create target Directory
+        print("Directory " , dirname ,  " created ")
+    except FileExistsError:
+        pass
+
+    fname = dirname + '/' + \
+                'E{}-{}_UA2{}-{}_alpha{}_beta{}.pkl'.format(int(min(Ebeam_list)),
+                  int(max(Ebeam_list)), int(min(UA2_list)), int(max(UA2_list)),
+                  int(round(traj.alpha*180/np.pi)), 
+                  int(round(traj.beta*180/np.pi)))
+    with open(fname, 'wb') as f:
+        pc.dump(traj_list, f -1)
+
+    print(fname + ' ***SAVED')
+
+    return
+
+def ReadTrajList(fname):
+    ''' import list of Traj objects from .pkl file
+    '''
+    with open(fname, 'rb') as f:
+        traj_list = pc.load(f)
+    return traj_list
+
+# %%
 ''' MAIN '''
 
 if __name__ == '__main__':
@@ -299,7 +343,7 @@ if __name__ == '__main__':
 
             try:
                 # create new trajectory object
-                traj1 = traj(q, m_Tl, Ebeam, r0, alpha_prim, beta_prim, UA2, UB2, dt)
+                traj1 = Traj(q, m_Tl, Ebeam, r0, alpha_prim, beta_prim, UA2, UB2, dt)
 
                 while not traj1.IsAimZ:
                     traj1.UB2, traj1.dt1, traj1.dt2 = UB2, dt, dt
@@ -376,6 +420,7 @@ if __name__ == '__main__':
                 traj_list.append(traj1)
                 print('trajectory saved, UB2={:.2f} kV'.format(traj1.UB2))
 
+# %% 
     plt.close('all')
     traj_list_passed = []  # list of trajs that passed geometry limitations
     if len(traj_list) != 0:
@@ -390,3 +435,6 @@ if __name__ == '__main__':
 # %%
     plot_grid(traj_list_passed, r_aim, Btor, Ipl, marker_E='')
 #    plot_scan(traj_list_passed, r_aim, 220., Btor, Ipl)
+
+# %%
+    SaveTrajList(traj_list_passed, Btor, Ipl)
