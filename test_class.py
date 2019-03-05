@@ -226,7 +226,7 @@ def SaveTrajList(traj_list, Btor, Ipl, dirname='output'):
                   int(round(traj.alpha*180/np.pi)), 
                   int(round(traj.beta*180/np.pi)))
     with open(fname, 'wb') as f:
-        pc.dump(traj_list, f -1)
+        pc.dump(traj_list, f, -1)
 
     print(fname + ' ***SAVED')
 
