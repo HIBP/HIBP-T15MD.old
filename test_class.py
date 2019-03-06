@@ -246,18 +246,18 @@ def ReadTrajList(fname, dirname='output'):
 
 if __name__ == '__main__':
     # toroidal field on axis
-    Btor = 2.0  # [T]
-    Ipl = 2.0  # Plasma current [MA]
+    Btor = 1.0  # [T]
+    Ipl = 1.0  # Plasma current [MA]
     q = 1.60217662e-19  # electron charge [Co]
     m_Tl = 204.3833 * 1.6605e-27  # Tl ion mass [kg]
 
     # initial beam energy range
-    dEbeam = 80.
-    Ebeam_range = np.arange(300.,1000. + dEbeam, dEbeam)  # [keV]
+    dEbeam = 20.
+    Ebeam_range = np.arange(80., 400. + dEbeam, dEbeam)  # [keV]
 
     #A2 plates voltage
-    dUA2 = 40.0
-    UA2_range = np.arange(-120., 320. + dUA2, dUA2)  # [kV]
+    dUA2 = 10.0
+    UA2_range = np.arange(-30., 60. + dUA2, dUA2)  # [kV]
 
     #B2 plates voltage
     UB2 = 10.0  # [kV]
@@ -303,7 +303,7 @@ if __name__ == '__main__':
     # timestep [sec]
     dt = 1e-7
 
-    r_aim = np.array([[2.6, -0.2, 0.]])
+    r_aim = np.array([[2.75, 0., 0.]])
 #    r_aim = np.array([[2.75, -0.5, 0.]])
 
     # chamber entrance coordinates
@@ -437,6 +437,6 @@ if __name__ == '__main__':
 # %%
     plot_grid(traj_list_passed, r_aim, Btor, Ipl, marker_E='')
     plot_scan(traj_list_passed, r_aim, 220., Btor, Ipl)
-
+    PlotSecAngles(traj_list,100)
 # %%
 #    SaveTrajList(traj_list_passed, Btor, Ipl, r_aim)

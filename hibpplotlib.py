@@ -852,19 +852,26 @@ def plot_grid_xy(traj_list, r_aim, Btor, Ipl, legend=True, zoom=True, linestyle_
 #%%
 
 def PlotSecAngles(traj_list, Ebeam):
+    fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
     A2list = []
     sec_angles_list = []
     for i in range(len(traj_list)):
         if traj_list[i].Ebeam == Ebeam:
-            A2list.append(traj_list[i].UA2)
+            A2list.append([traj_list[i].UA2, traj_list[i].UB2])
             # Get vector coords for last point in Secondary traj
             Vx = traj_list[i].RV_Sec[-1,3] # Vx
             Vy = traj_list[i].RV_Sec[-1,4] # Vy
             Vz = traj_list[i].RV_Sec[-1,5] # Vz
-            sec_angle_tuple = (np.arctan(Vy,np.sqrt(Vx**2 + Vy**2)),np.arctan(-Vz,Vx))
-            sec_angles_list.append(sec_angle_tuple)
-    plt.plot(A2list, sec_angles_list)
->>> plt.axis('tight')
->>> plt.show()
-
-
+            sec_angle_array = [np.arctan(Vy/np.sqrt(Vx**2 + Vy**2))*180/np.pi,
+                               np.arctan(-Vz/Vx)*180/np.pi]
+            sec_angles_list.append(sec_angle_array)
+    A2list = np.array(A2list)
+    sec_angles_list = np.array(sec_angles_list)
+    ax1.plot(A2list[:,0], sec_angles_list[:,0])
+    ax1.axis('tight')
+    ax1.set_xlabel('UA2 (kV)')
+    ax1.set_ylabel('Exit alpha (grad)')
+    ax2.plot(A2list[:,1], sec_angles_list[:,1])
+    ax2.axis('tight')
+    ax2.set_xlabel('UB2 (kV)')
+    ax2.set_ylabel('Exit beta (grad)')
