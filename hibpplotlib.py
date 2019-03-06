@@ -364,7 +364,8 @@ def plot_fan(traj_list, r_aim, A2_edges, B2_edges,
     :return: None
     '''
 
-    fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3)
+#    fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3)
+    fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
 
     # Grids
     ax1.grid(True)
@@ -377,10 +378,10 @@ def plot_fan(traj_list, r_aim, A2_edges, B2_edges,
     ax2.minorticks_on() # make secondary ticks on axes
     ax2.grid(which='minor', color = 'tab:gray', linestyle = ':') # draw secondary grid
 
-    ax3.grid(True)
-    ax3.grid(which='major', color = 'tab:gray') #draw primary grid
-    ax3.minorticks_on() # make secondary ticks on axes
-    ax3.grid(which='minor', color = 'tab:gray', linestyle = ':') # draw secondary grid
+#    ax3.grid(True)
+#    ax3.grid(which='major', color = 'tab:gray') #draw primary grid
+#    ax3.minorticks_on() # make secondary ticks on axes
+#    ax3.grid(which='minor', color = 'tab:gray', linestyle = ':') # draw secondary grid
 
     # Axis
 
@@ -396,11 +397,11 @@ def plot_fan(traj_list, r_aim, A2_edges, B2_edges,
     ax2.set_ylabel('Z (m)')
     ax2.axis('equal')
 
-    ax3.xaxis.set_tick_params(width=tick_width) # increase tick size
-    ax3.yaxis.set_tick_params(width=tick_width)
-    ax3.set_xlabel('Z (m)')
-    ax3.set_ylabel('Y (m)')
-    ax3.axis('equal')
+#    ax3.xaxis.set_tick_params(width=tick_width) # increase tick size
+#    ax3.yaxis.set_tick_params(width=tick_width)
+#    ax3.set_xlabel('Z (m)')
+#    ax3.set_ylabel('Y (m)')
+#    ax3.axis('equal')
 
     # get T-15 camera and plasma contours
     plot_geometry(ax1)
@@ -408,32 +409,39 @@ def plot_fan(traj_list, r_aim, A2_edges, B2_edges,
     # plot aim dot
     ax1.plot(r_aim[0,0],r_aim[0,1],'*')
     ax2.plot(r_aim[0,0],r_aim[0,2],'*')
-    ax3.plot(r_aim[0,2],r_aim[0,1],'*')
+#    ax3.plot(r_aim[0,2],r_aim[0,1],'*')
 
     for tr in traj_list:
         if tr.Ebeam == Ebeam and tr.UA2 == UA2:
             #plot plates
-            ax1.plot(A2_edges[0][[0,3],0],A2_edges[0][[0,3],1], 
+            ax1.plot(A2_edges[0][[0,3],0],A2_edges[0][[0,3],1],
                      color='k', linewidth = 2)
-            ax1.plot(A2_edges[1][[0,3],0],A2_edges[1][[0,3],1], 
+            ax1.plot(A2_edges[1][[0,3],0],A2_edges[1][[0,3],1],
                      color='k', linewidth = 2)
-            ax1.fill(B2_edges[0][:,0], B2_edges[0][:,1], fill=False, 
+            ax1.fill(B2_edges[0][:,0], B2_edges[0][:,1], fill=False,
+                     hatch='//', linewidth = 2)
+
+            ax2.plot(B2_edges[0][[0,3],0],B2_edges[0][[0,3],2],
+                     color='k', linewidth = 2)
+            ax2.plot(B2_edges[1][[0,3],0],B2_edges[1][[0,3],2],
+                     color='k', linewidth = 2)
+            ax2.fill(A2_edges[0][:,0], A2_edges[0][:,2], fill=False,
                      hatch='//', linewidth = 2)
 
             ax1.plot(tr.RV_Prim[:,0], tr.RV_Prim[:,1],color='k')
             ax2.plot(tr.RV_Prim[:,0], tr.RV_Prim[:,2],color='k')
-            ax3.plot(tr.RV_Prim[:,2], tr.RV_Prim[:,1],color='k')
+#            ax3.plot(tr.RV_Prim[:,2], tr.RV_Prim[:,1],color='k')
 
             last_points = []
             for i in tr.Fan:
                 ax1.plot(i[:,0], i[:,1],color='r')
                 ax2.plot(i[:,0], i[:,2],color='r')
-                ax3.plot(i[:,2], i[:,1],color='r')
+#                ax3.plot(i[:,2], i[:,1],color='r')
                 last_points.append(i[-1, :])
             last_points = np.array(last_points)
-            ax3.plot(last_points[:, 2], last_points[:, 1], '--o', color='r')
+#            ax3.plot(last_points[:, 2], last_points[:, 1], '--o', color='r')
 
-    ax1.set_title('E={} keV, UA2={} kV, Btor = {} T, Ipl = {} MA'.format(tr.Ebeam,tr.UA2, Btor, Ipl))
+    ax1.set_title('E={} keV, UA2={} kV, UB2={} kV, Btor={} T, Ipl={} MA'.format(tr.Ebeam,tr.UA2, tr.UB2, Btor, Ipl))
 
 #%%
 def plot_fan_xy(traj_list, r_aim, A2_edges, B2_edges,
@@ -539,7 +547,8 @@ def plot_scan(traj_list, r_aim,
     # get the list of UA2
     A2list = []
     for i in range(len(traj_list)):
-        A2list.append(traj_list[i].UA2)
+        if traj_list[i].Ebeam == Ebeam:
+            A2list.append(traj_list[i].UA2)
 
     #find UA2 max and min
     UA2_max = np.amax(np.array(A2list))
@@ -574,7 +583,7 @@ def plot_scan_xy(traj_list, r_aim,
     :return: None
     '''
 
-    fig, ax1 = plt.subplots()
+    fig, ax1 = plt.subplots(figsize=(8,7.5))
 
     # Grids
     ax1.grid(True)
@@ -597,7 +606,8 @@ def plot_scan_xy(traj_list, r_aim,
     # get the list of UA2
     A2list = []
     for i in range(len(traj_list)):
-        A2list.append(traj_list[i].UA2)
+        if traj_list[i].Ebeam == Ebeam:
+            A2list.append(traj_list[i].UA2)
 
     #find UA2 max and min
     UA2_max = np.amax(np.array(A2list))
@@ -612,6 +622,8 @@ def plot_scan_xy(traj_list, r_aim,
             # plot trajectories
             ax1.plot(traj_list[i].RV_Prim[:,0], traj_list[i].RV_Prim[:,1], color='k')
             ax1.plot(traj_list[i].RV_Sec[:,0], traj_list[i].RV_Sec[:,1], color='r')
+
+    ax1.set(xlim=(2.0, 2.1), ylim=(-1.5, 1.5), autoscale_on=False)
 
 # %%
 def plot_grid(traj_list, r_aim, Btor, Ipl,
@@ -734,7 +746,7 @@ def plot_grid(traj_list, r_aim, Btor, Ipl,
     ax1.legend()
 
 #%%
-def plot_grid_xy(traj_list, r_aim, Btor, Ipl, legend=True, linestyle_A2='--', 
+def plot_grid_xy(traj_list, r_aim, Btor, Ipl, legend=True, zoom=True, linestyle_A2='--',
                   linestyle_E='-', marker_A2='*', marker_E='p',
                   traj_color='tab:gray'):
     '''
@@ -746,8 +758,7 @@ def plot_grid_xy(traj_list, r_aim, Btor, Ipl, legend=True, linestyle_A2='--',
     :return: grid figure
     '''
 
-    fig, ax1 = plt.subplots()
-
+    fig, ax1 = plt.subplots(figsize=(8,7.5))
     # Grids
     ax1.grid(True)
     ax1.grid(which='major', color = 'tab:gray') #draw primary grid
@@ -833,3 +844,27 @@ def plot_grid_xy(traj_list, r_aim, Btor, Ipl, legend=True, linestyle_A2='--',
 
     if legend:
         ax1.legend()
+    if zoom:
+        ax1.set(xlim=(1.25, 2.5), ylim=(-0.5, 1.2), autoscale_on=False)
+
+    plt.show()
+
+#%%
+
+def PlotSecAngles(traj_list, Ebeam):
+    A2list = []
+    sec_angles_list = []
+    for i in range(len(traj_list)):
+        if traj_list[i].Ebeam == Ebeam:
+            A2list.append(traj_list[i].UA2)
+            # Get vector coords for last point in Secondary traj
+            Vx = traj_list[i].RV_Sec[-1,3] # Vx
+            Vy = traj_list[i].RV_Sec[-1,4] # Vy
+            Vz = traj_list[i].RV_Sec[-1,5] # Vz
+            sec_angle_tuple = (np.arctan(Vy,np.sqrt(Vx**2 + Vy**2)),np.arctan(-Vz,Vx))
+            sec_angles_list.append(sec_angle_tuple)
+    plt.plot(A2list, sec_angles_list)
+>>> plt.axis('tight')
+>>> plt.show()
+
+

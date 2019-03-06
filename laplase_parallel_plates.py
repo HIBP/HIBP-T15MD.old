@@ -90,8 +90,8 @@ if __name__ == '__main__':
 
     # define center position
     plts2_center = np.array([0., 0., 0.]) # plates center
-    plts2_alpha = 0. # plates alpha
-    plts2_beta = 0. # plates beta
+    plts2_alpha = 25. # plates alpha
+    plts2_beta = -10. # plates beta
     plts2_gamma = 0. # plates gamma
 
     # define voltages [Volts]
