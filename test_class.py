@@ -25,7 +25,7 @@ class Traj():
         Vabs = np.sqrt(2 * Ebeam * 1.602176487E-16 / m)
         V0 = np.array([-Vabs * np.cos(alpha) * np.cos(beta),
                        -Vabs * np.sin(alpha),
-                       -Vabs * np.cos(alpha) * np.sin(beta)])
+                       Vabs * np.cos(alpha) * np.sin(beta)])
         self.alpha = alpha
         self.beta = beta
         self.UA2 = UA2
@@ -198,10 +198,11 @@ class Traj():
         self.Fan = list_sec
 
 # %%
-def SaveTrajList(traj_list, Btor, Ipl, dirname='output'):
+def SaveTrajList(traj_list, Btor, Ipl, r_aim, dirname='output'):
     ''' function saves list of Traj objects to pickle file
     :param traj_list: list of trajectories
     '''
+
     if len(traj_list) == 0:
         print('traj_list empty!')
         return
@@ -221,19 +222,20 @@ def SaveTrajList(traj_list, Btor, Ipl, dirname='output'):
         pass
 
     fname = dirname + '/' + \
-                'E{}-{}_UA2{}-{}_alpha{}_beta{}.pkl'.format(int(min(Ebeam_list)),
+                'E{}-{}_UA2{}-{}_alpha{}_beta{}_x{}y{}z{}.pkl'.format(int(min(Ebeam_list)),
                   int(max(Ebeam_list)), int(min(UA2_list)), int(max(UA2_list)),
-                  int(round(traj.alpha*180/np.pi)), 
-                  int(round(traj.beta*180/np.pi)))
+                  int(round(traj.alpha*180/np.pi)),
+                  int(round(traj.beta*180/np.pi)),
+                  int(r_aim[0,0]*100), int(r_aim[0,1]*100), int(r_aim[0,2]*100))
+
     with open(fname, 'wb') as f:
         pc.dump(traj_list, f, -1)
 
     print(fname + ' ***SAVED')
 
-    return
-
-def ReadTrajList(fname):
-    ''' import list of Traj objects from .pkl file
+def ReadTrajList(fname, dirname='output'):
+    '''
+    import list of Traj objects from .pkl file
     '''
     with open(fname, 'rb') as f:
         traj_list = pc.load(f)
@@ -262,8 +264,8 @@ if __name__ == '__main__':
     dUB2 = 15.0  # [kV/m]
 
     # alpha and beta angles of primary beamline
-    alpha_prim = 30.*(np.pi/180)  # rad
-    beta_prim = 0.*(np.pi/180)  # rad
+    alpha_prim = 25.*(np.pi/180)  # rad
+    beta_prim = -10.*(np.pi/180)  # rad
     gamma_prim = -90.*(np.pi/180)  # rad
     angles_prime = np.array([alpha_prim, beta_prim, gamma_prim])
 
@@ -301,7 +303,7 @@ if __name__ == '__main__':
     # timestep [sec]
     dt = 1e-7
 
-    r_aim = np.array([[2.5, -0.2, 0.]])
+    r_aim = np.array([[2.6, -0.2, 0.]])
 #    r_aim = np.array([[2.75, -0.5, 0.]])
 
     # chamber entrance coordinates
@@ -316,7 +318,7 @@ if __name__ == '__main__':
     fname = 'elecfieldA2.dat'
     A2_normals, A2_edges = PlacePlate(fname, rA2)
     EA2 = ReadElecField(fname, rA2, angles_prime)
-    
+
     fname = 'elecfieldB2.dat'
     B2_normals, B2_edges = PlacePlate(fname, rB2)
     EB2 = ReadElecField(fname, rB2, angles_prime)
@@ -420,7 +422,7 @@ if __name__ == '__main__':
                 traj_list.append(traj1)
                 print('trajectory saved, UB2={:.2f} kV'.format(traj1.UB2))
 
-# %% 
+# %%
     plt.close('all')
     traj_list_passed = []  # list of trajs that passed geometry limitations
     if len(traj_list) != 0:
@@ -434,7 +436,7 @@ if __name__ == '__main__':
 
 # %%
     plot_grid(traj_list_passed, r_aim, Btor, Ipl, marker_E='')
-#    plot_scan(traj_list_passed, r_aim, 220., Btor, Ipl)
+    plot_scan(traj_list_passed, r_aim, 220., Btor, Ipl)
 
 # %%
-    SaveTrajList(traj_list_passed, Btor, Ipl)
+#    SaveTrajList(traj_list_passed, Btor, Ipl, r_aim)
