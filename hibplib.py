@@ -12,6 +12,8 @@ from collections import defaultdict
 from matplotlib import path
 from scipy.interpolate import RegularGridInterpolator
 import os
+import errno
+import pickle as pc
 
 # %% Runge-Kutt
 def RungeKutt(q, m, RV, dt, E, B):
@@ -204,95 +206,132 @@ def SegmentPolygonIntersection(polygon_coords, segment_coords):
 
 
 # %%
-def PlacePlate(fname, xyz):
+def PlacePlate(r_dict, plts_angles, dirname = 'elecfield'):
     '''
     read plate's shape and angle parametres from provided file (should lbe in the same directory)
     return: plate's geometry array
     :param fname: filename
     :param xyz: coordinate array of plates centre
     '''
-    with open(fname, 'r') as f:
-        geom_list = [float(i) for i in f.readline().replace(' # plate\'s length, thic, width and gap\n','').split(' ')]
-        angle_line = [float(i) for i in f.readline().replace(' # plate\'s alpha, beta and gamma angle\n','').split(' ')]
-    alpha, beta, gamma = angle_line
-    # Geometry rotated in system based on central point between plates
-    plate_length = geom_list[0]
-    plate_thic = geom_list[1]
-    plate_width = geom_list[2]
-    gap = geom_list[3]
-    # Upper plate
-    UP5 =  np.array([-plate_length/2., gap/2., plate_width/2.])
-    UP6 =  np.array([-plate_length/2., gap/2., -plate_width/2.])
-    UP7 =  np.array([plate_length/2., gap/2., -plate_width/2.])
-    UP8 =  np.array([plate_length/2., gap/2., plate_width/2.])
-    UP_full = np.array([UP5, UP6, UP7, UP8]) # coordinates of upper's plate edges
-    UP_rotated_translated = UP_full.copy()
-    for UP in range(UP_rotated_translated.shape[0]):
-        UP_rotated_translated[UP, :] = Rotate(UP_rotated_translated[UP, :], axis=(1, 0, 0), deg=gamma)
-        UP_rotated_translated[UP, :] = Rotate(UP_rotated_translated[UP, :], axis=(0, 0, 1), deg=alpha)
-        UP_rotated_translated[UP, :] = Rotate(UP_rotated_translated[UP, :], axis=(0, 1, 0), deg=beta)
-        UP_rotated_translated[UP, :] = Translate(UP_rotated_translated[UP, :], (xyz[0], xyz[1], xyz[2]))
-    UP_plane_normal = np.cross(UP5-UP6, UP6-UP7)
 
-    # lower plate
-    LP5 =  np.array([-plate_length/2., -gap/2., plate_width/2.])
-    LP6 =  np.array([-plate_length/2., -gap/2., -plate_width/2.])
-    LP7 =  np.array([plate_length/2., -gap/2., -plate_width/2.])
-    LP8 =  np.array([plate_length/2., -gap/2., plate_width/2.])
-    LP_full = np.array([LP5, LP6, LP7, LP8]) # coordinates of lower's plate edges
-    LP_rotated_translated = LP_full.copy()
-    for LP in range(LP_full.shape[0]):
-        LP_rotated_translated[LP, :] = Rotate(LP_rotated_translated[LP, :], axis=(1, 0, 0), deg=gamma)
-        LP_rotated_translated[LP, :] = Rotate(LP_rotated_translated[LP, :], axis=(0, 0, 1), deg=alpha)
-        LP_rotated_translated[LP, :] = Rotate(LP_rotated_translated[LP, :], axis=(0, 1, 0), deg=beta)
-        LP_rotated_translated[LP, :] = Translate(LP_rotated_translated[LP, :], (xyz[0], xyz[1], xyz[2]))
-    LP_plane_normal = np.cross(LP5-LP6, LP6-LP7)
+    Plates_Geom = {}
 
-    plates_normals = np.array([UP_plane_normal, LP_plane_normal])
-    edges_coords = np.array([UP_rotated_translated, LP_rotated_translated])
+    dirname = dirname + '/' + 'alpha2_{}_beta2_{}'.format(int(plts_angles[0]),
+                                int(plts_angles[1]))
 
-    return plates_normals, edges_coords
+    for filename in os.listdir(dirname):
+        if filename.endswith(".dat"):
+            try:
+                print('Placing {} plate...'.format(filename[-6:-4]))
+                xyz = r_dict[filename[-6:-4]]
+            except KeyError:
+                print('Plate unrecognised. Aborting plate placement...')
+                raise Exception('PlateUnrecognised!')
+
+            with open(dirname + '/' + filename, 'r') as f:
+                geom_list = [float(i) for i in f.readline().replace(' # plate\'s length, thic, width and gap\n','').split(' ')]
+                angle_line = [float(i) for i in f.readline().replace(' # plate\'s alpha, beta and gamma angle\n','').split(' ')]
+
+            alpha, beta, gamma = angle_line
+
+            # Geometry rotated in system based on central point between plates
+            plate_length = geom_list[0]
+            plate_width = geom_list[2]
+            gap = geom_list[3]
+            # Upper plate
+            UP5 =  np.array([-plate_length/2., gap/2., plate_width/2.])
+            UP6 =  np.array([-plate_length/2., gap/2., -plate_width/2.])
+            UP7 =  np.array([plate_length/2., gap/2., -plate_width/2.])
+            UP8 =  np.array([plate_length/2., gap/2., plate_width/2.])
+            UP_full = np.array([UP5, UP6, UP7, UP8]) # coordinates of upper's plate edges
+            UP_rotated_translated = UP_full.copy()
+            for UP in range(UP_rotated_translated.shape[0]):
+                UP_rotated_translated[UP, :] = Rotate(UP_rotated_translated[UP, :], axis=(1, 0, 0), deg=gamma)
+                UP_rotated_translated[UP, :] = Rotate(UP_rotated_translated[UP, :], axis=(0, 0, 1), deg=alpha)
+                UP_rotated_translated[UP, :] = Rotate(UP_rotated_translated[UP, :], axis=(0, 1, 0), deg=beta)
+                UP_rotated_translated[UP, :] = Translate(UP_rotated_translated[UP, :], (xyz[0], xyz[1], xyz[2]))
+            UP_plane_normal = np.cross(UP5-UP6, UP6-UP7)
+
+            # lower plate
+            LP5 =  np.array([-plate_length/2., -gap/2., plate_width/2.])
+            LP6 =  np.array([-plate_length/2., -gap/2., -plate_width/2.])
+            LP7 =  np.array([plate_length/2., -gap/2., -plate_width/2.])
+            LP8 =  np.array([plate_length/2., -gap/2., plate_width/2.])
+            LP_full = np.array([LP5, LP6, LP7, LP8]) # coordinates of lower's plate edges
+            LP_rotated_translated = LP_full.copy()
+            for LP in range(LP_full.shape[0]):
+                LP_rotated_translated[LP, :] = Rotate(LP_rotated_translated[LP, :], axis=(1, 0, 0), deg=gamma)
+                LP_rotated_translated[LP, :] = Rotate(LP_rotated_translated[LP, :], axis=(0, 0, 1), deg=alpha)
+                LP_rotated_translated[LP, :] = Rotate(LP_rotated_translated[LP, :], axis=(0, 1, 0), deg=beta)
+                LP_rotated_translated[LP, :] = Translate(LP_rotated_translated[LP, :], (xyz[0], xyz[1], xyz[2]))
+            LP_plane_normal = np.cross(LP5-LP6, LP6-LP7)
+
+#            plates_normals = np.array([UP_plane_normal, LP_plane_normal])
+#            edges_coords = np.array([UP_rotated_translated, LP_rotated_translated])
+            Plates_Geom[filename[-6:-4]] = np.array([UP_plane_normal, LP_plane_normal,
+                                                     UP_rotated_translated,
+                                                     LP_rotated_translated])
+
+    return Plates_Geom
 
 # %%
-def ReadElecField(fname, xyz, angles):
+def ReadElecField(r_dict, plts_angles, dirname = 'elecfield'):
     '''
     read plate's shape and angle parametres along with electric field values
     from provided file (should lbe in the same directory)
     return: intrepolator function for electric field
     :param fname: filename
-    :param xyz: coordinate array of plates centre
+    :param r_dict: dict (key: name of plate,
+                         value: coordinate array of plates centre)
     '''
-    with open(fname, 'r') as f:
-        geom_list = [float(i) for i in f.readline().replace(' # plate\'s length, thic, width and gap\n','').split(' ')]
-        angle_line = [float(i) for i in f.readline().replace(' # plate\'s alpha, beta and gamma angle\n','').split(' ')]
-        if round(angle_line[0],1) == round(angles[0]*(180/np.pi),1)  and \
-           round(angle_line[1],1) == round(angles[1]*(180/np.pi),1):
+    E=[]
 
-            first_line = [int(i) for i in f.readline().replace(' # number of dots (x,y,z)\n','').split(' ')]
-            Ex = np.zeros((first_line[0], first_line[1], first_line[2]))
-            Ey = np.zeros((first_line[0], first_line[1], first_line[2]))
-            Ez = np.zeros((first_line[0], first_line[1], first_line[2]))
-            second_line = [float(i) for i in f.readline().replace(' # border x, border y, border z, delta\n','').replace('\n','').split(' ')]
-            for i in range(first_line[0]):
-                for j in range(first_line[1]):
-                    for k in range(first_line[2]):
-                        line = [float(l) for l in f.readline().replace('\n','').split(' ')]
-                        Ex[i,j,k] = line[0]
-                        Ey[i,j,k] = line[1]
-                        Ez[i,j,k] = line[2]
-        else:
-            print('\nERROR: Angles do not match!\nRecalculate electric field with desired angles or change plates\' angles in test_class.py to match ones used for initial  electric field caluclation\n')
+    dirname = dirname + '/' + 'alpha2_{}_beta2_{}'.format(int(plts_angles[0]),
+                                int(plts_angles[1]))
 
-    mesh_range_x = np.arange(-second_line[0]/2., second_line[0]/2., second_line[3])
-    mesh_range_y = np.arange(-second_line[1]/2., second_line[1]/2., second_line[3])
-    mesh_range_z = np.arange(-second_line[2]/2., second_line[2]/2., second_line[3])
+    for filename in os.listdir(dirname):
+        if filename.endswith(".dat"):
+            try:
+                print('Reading {} electric field...'.format(filename[-6:-4]))
+                xyz = r_dict[filename[-6:-4]]
+            except KeyError:
+                print('Plate unrecognised. Aborting...')
+                raise Exception('PlateUnrecognised!')
+
+            with open(dirname + '/' + filename, 'r') as f:
+                geom_list = [float(i) for i in f.readline().replace(' # plate\'s length, thic, width and gap\n','').split(' ')]
+                angle_line = [float(i) for i in f.readline().replace(' # plate\'s alpha, beta and gamma angle\n','').split(' ')]
+                first_line = [int(i) for i in f.readline().replace(' # number of dots (x,y,z)\n','').split(' ')]
+                second_line = [float(i) for i in f.readline().replace(' # border x, border y, border z, delta\n','').replace('\n','').split(' ')]
+                if round(angle_line[0],1) == round(plts_angles[0]*(180/np.pi),1)  and \
+                   round(angle_line[1],1) == round(plts_angles[1]*(180/np.pi),1):
+                    print('\nERROR: Angles do not match!\nRecalculate electric field with desired angles or change plates\' angles in test_class.py to match ones used for initial  electric field caluclation\n')
+                    raise
+                Ex = np.zeros((first_line[0], first_line[1], first_line[2]))
+                Ey = np.zeros((first_line[0], first_line[1], first_line[2]))
+                Ez = np.zeros((first_line[0], first_line[1], first_line[2]))
+
+                for i in range(first_line[0]):
+                    for j in range(first_line[1]):
+                        for k in range(first_line[2]):
+                            line = [float(l) for l in f.readline().replace('\n','').split(' ')]
+                            Ex[i,j,k] = line[0]
+                            Ey[i,j,k] = line[1]
+                            Ez[i,j,k] = line[2]
 
 
-    # make interpolation for Ex, Ey, Ez
-    Ex_interp = RegularGridInterpolator((mesh_range_x + xyz[0], mesh_range_y + xyz[1], mesh_range_z + xyz[2]), Ex)
-    Ey_interp = RegularGridInterpolator((mesh_range_x + xyz[0], mesh_range_y + xyz[1], mesh_range_z + xyz[2]), Ey)
-    Ez_interp = RegularGridInterpolator((mesh_range_x + xyz[0], mesh_range_y + xyz[1], mesh_range_z + xyz[2]), Ez)
-    E = [Ex_interp, Ey_interp, Ez_interp]
+            mesh_range_x = np.arange(-second_line[0]/2., second_line[0]/2., second_line[3])
+            mesh_range_y = np.arange(-second_line[1]/2., second_line[1]/2., second_line[3])
+            mesh_range_z = np.arange(-second_line[2]/2., second_line[2]/2., second_line[3])
+
+
+            # make interpolation for Ex, Ey, Ez
+            Ex_interp = RegularGridInterpolator((mesh_range_x + xyz[0], mesh_range_y + xyz[1], mesh_range_z + xyz[2]), Ex)
+            Ey_interp = RegularGridInterpolator((mesh_range_x + xyz[0], mesh_range_y + xyz[1], mesh_range_z + xyz[2]), Ey)
+            Ez_interp = RegularGridInterpolator((mesh_range_x + xyz[0], mesh_range_y + xyz[1], mesh_range_z + xyz[2]), Ez)
+            E_read = [Ex_interp, Ey_interp, Ez_interp]
+        E.append(E_read)
+
 
     return E
 
@@ -370,3 +409,52 @@ def ReturnElecField(xyz, Ein, U):
             continue
 
     return Eout
+
+# %%
+def SaveTrajList(traj_list, Btor, Ipl, r_aim, dirname='output'):
+    ''' function saves list of Traj objects to pickle file
+    :param traj_list: list of trajectories
+    '''
+
+    if len(traj_list) == 0:
+        print('traj_list empty!')
+        return
+
+    Ebeam_list = []
+    UA2_list = []
+
+    for traj in traj_list:
+        Ebeam_list.append(traj.Ebeam)
+        UA2_list.append(traj.UA2)
+
+    dirname = dirname + '/' + 'B{}_I{}'.format(int(Btor), int(Ipl))
+
+    if not os.path.exists(dirname):
+        try:
+            os.makedirs(dirname, 0o700)
+            print("Directory " , dirname ,  " created ")
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+
+    fname = dirname + '/' + \
+                'E{}-{}_UA2{}-{}_alpha{}_beta{}_x{}y{}z{}.pkl'.format(int(min(Ebeam_list)),
+                  int(max(Ebeam_list)), int(min(UA2_list)), int(max(UA2_list)),
+                  int(round(traj.alpha*180/np.pi)),
+                  int(round(traj.beta*180/np.pi)),
+                  int(r_aim[0,0]*100), int(r_aim[0,1]*100), int(r_aim[0,2]*100))
+
+    with open(fname, 'wb') as f:
+        pc.dump(traj_list, f, -1)
+
+    print('\nSAVED LIST: \n' + fname)
+
+#%%
+
+def ReadTrajList(fname, dirname='output'):
+    '''
+    import list of Traj objects from .pkl file
+    '''
+    with open(dirname + '/'+fname, 'rb') as f:
+        traj_list = pc.load(f)
+    return traj_list

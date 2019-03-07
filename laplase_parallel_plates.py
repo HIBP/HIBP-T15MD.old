@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 from hibplib import Rotate
+import os
+import errno
 '''
 Calculate electric potential and electric field between two plates
 '''
@@ -53,7 +55,8 @@ def InitConditions(U, Uupper_plate, Ulower_plate, upper_plate_flag,
 
 # %%
 def PDEstep(U, Uupper_plate, Ulower_plate, upper_plate_flag, lower_plate_flag, edge_flag):
-    '''PDE calculation at a single time step t
+    '''
+    PDE calculation at a single time step t
     '''
     # apply initial conditions at every time step
     U = InitConditions(U, Uupper_plate, Ulower_plate, upper_plate_flag,
@@ -65,10 +68,25 @@ def PDEstep(U, Uupper_plate, Ulower_plate, upper_plate_flag, lower_plate_flag, e
     return U
 
 # %%
-def SaveElectricField(fname, Ex, Ey, Ez):
-    '''save Ex, Ey, Ez arrays to file'''
-    open(fname, 'w').close() # erases data from file before writing
-    with open(fname, 'w') as myfile:
+def SaveElectricField(fname, Ex, Ey, Ez, plts_angles, dirname='elecfield'):
+    '''
+    save Ex, Ey, Ez arrays to file
+    '''
+
+    dirname = dirname + '/' + 'alpha2_{}_beta2_{}'.format(int(plts_angles[0]),
+                                int(plts_angles[1]))
+
+    if not os.path.exists(dirname):
+        try:
+            os.makedirs(dirname, 0o700)
+            print("Directory " , dirname ,  " created ")
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+
+    open(dirname + '/' + fname, 'w').close() # erases data from file before writing
+
+    with open(dirname + '/' + fname, 'w') as myfile:
         myfile.write('{} {} {} {} # plate\'s length, thic, width and gap\n'.format(plate_length, plate_thic, plate_width, gap))
         myfile.write('{} {} {} # plate\'s alpha, beta and gamma angle\n'.format(plts2_alpha, plts2_beta, plts2_gamma))
         myfile.write('{} {} {} # number of dots (x,y,z)\n'.format(Ex.shape[0], Ex.shape[1], Ex.shape[2]))
@@ -90,9 +108,10 @@ if __name__ == '__main__':
 
     # define center position
     plts2_center = np.array([0., 0., 0.]) # plates center
-    plts2_alpha = 25. # plates alpha
+    plts2_alpha = 30. # plates alpha
     plts2_beta = -10. # plates beta
-    plts2_gamma = 0. # plates gamma
+    plts2_gamma = -90. # plates gamma
+    plts2_angles = np.array([plts2_alpha, plts2_beta, plts2_gamma])
 
     # define voltages [Volts]
     Uupper_plate = 0.
@@ -190,8 +209,11 @@ if __name__ == '__main__':
 
 # %%
     Ex, Ey, Ez = np.gradient(-1*U, delta) # Ex, Ey, Ez
-    fname='elecfieldA2.dat'
-    SaveElectricField(fname, Ex, Ey, Ez)
+    if abs(plts2_gamma) != 0.:
+        fname='elecfieldB2.dat'
+    else:
+        fname='elecfieldA2.dat'
+    SaveElectricField(fname, Ex, Ey, Ez, plts2_angles)
 
 # %%
 #    plot_contours(mesh_range_x, mesh_range_y, mesh_range_z, U, 30)

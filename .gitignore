@@ -12,6 +12,7 @@ test_classOld.py
 # Dat files
 *.dat
 magfield
+elecfield
 backup
 output
 *.png

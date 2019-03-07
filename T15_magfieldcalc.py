@@ -258,7 +258,7 @@ def calcBplasma(points, filename, CurrTot):
     B = BiotSavart(points, wires)
     return B, wires
 
-# %%
+#%%
 def SaveMagneticField(fname, B, dirname="magfield"):
     ''' save magnetic field array to file
     '''
@@ -281,7 +281,7 @@ def SaveMagneticField(fname, B, dirname="magfield"):
             myfile.write('{} {} {}\n'.format(B[i, 0], B[i, 1], B[i, 2]))
     print('Magnetic field saved, ' + fname)
 
-# %%
+#%%
 if __name__ == '__main__':
 
     if input("Recalculate magnetic fields [y/n]? ") == 'y':

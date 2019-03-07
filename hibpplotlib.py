@@ -14,6 +14,7 @@ import wire
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from hibplib import *
+from scipy.stats import gaussian_kde
 
 # %%
 '''############################################################################
@@ -850,28 +851,148 @@ def plot_grid_xy(traj_list, r_aim, Btor, Ipl, legend=True, zoom=True, linestyle_
     plt.show()
 
 #%%
-
-def PlotSecAngles(traj_list, Ebeam):
-    fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
-    A2list = []
-    sec_angles_list = []
+def PlotAngles1En(traj_list, Btor, Ipl, Ebeam):
+    equal_energy_list = []
     for i in range(len(traj_list)):
         if traj_list[i].Ebeam == Ebeam:
-            A2list.append([traj_list[i].UA2, traj_list[i].UB2])
             # Get vector coords for last point in Secondary traj
             Vx = traj_list[i].RV_Sec[-1,3] # Vx
             Vy = traj_list[i].RV_Sec[-1,4] # Vy
             Vz = traj_list[i].RV_Sec[-1,5] # Vz
-            sec_angle_array = [np.arctan(Vy/np.sqrt(Vx**2 + Vy**2))*180/np.pi,
-                               np.arctan(-Vz/Vx)*180/np.pi]
-            sec_angles_list.append(sec_angle_array)
-    A2list = np.array(A2list)
-    sec_angles_list = np.array(sec_angles_list)
-    ax1.plot(A2list[:,0], sec_angles_list[:,0])
+            equal_energy_list.append([traj_list[i].UA2, traj_list[i].UB2,
+                                      np.arctan(Vy/np.sqrt(Vx**2 + Vy**2))*180/np.pi,
+                                      np.arctan(-Vz/Vx)*180/np.pi])
+
+    equal_energy_list = np.array(equal_energy_list)
+
+    #find  max and min angles
+    angles_min = np.minimum.reduce(equal_energy_list)
+    angles_max = np.maximum.reduce(equal_energy_list)
+
+
+    fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
+
+    ax1.plot(equal_energy_list[:,0], equal_energy_list[:,2])
     ax1.axis('tight')
     ax1.set_xlabel('UA2 (kV)')
     ax1.set_ylabel('Exit alpha (grad)')
-    ax2.plot(A2list[:,1], sec_angles_list[:,1])
+
+    ax2.plot(equal_energy_list[:,1], equal_energy_list[:,3])
     ax2.axis('tight')
     ax2.set_xlabel('UB2 (kV)')
     ax2.set_ylabel('Exit beta (grad)')
+
+    # Grids
+    ax1.grid(True)
+    ax1.grid(which='major', color = 'tab:gray') #draw primary grid
+    ax1.minorticks_on() # make secondary ticks on axes
+    ax1.grid(which='minor', color = 'tab:gray', linestyle = ':') # draw secondary grid
+
+    # Fonts and ticks
+    ax1.tick_params(axis='both', which='major', labelsize=18) # increase label font size
+    ax1.xaxis.set_tick_params(width=2) # increase tick size
+    ax1.yaxis.set_tick_params(width=2)
+
+    ax1.set_title('exit alpha(UA2) for Ebeam: {} keV'.format(Ebeam))
+
+    # Grids
+    ax2.grid(True)
+    ax2.grid(which='major', color = 'tab:gray') #draw primary grid
+    ax2.minorticks_on() # make secondary ticks on axes
+    ax2.grid(which='minor', color = 'tab:gray', linestyle = ':') # draw secondary grid
+
+    # Fonts and ticks
+    ax2.tick_params(axis='both', which='major', labelsize=18) # increase label font size
+    ax2.xaxis.set_tick_params(width=2) # increase tick size
+    ax2.yaxis.set_tick_params(width=2)
+
+    ax2.set_title('exit beta(UA2) for Ebeam: {} keV'.format(Ebeam))
+    fig.suptitle('Exit angles(U) for Ebeam: {} keV'.format(Ebeam)+
+                  '\nUA2: [{}, {}] kV, UB2: [{}, {}] kV'
+                  .format(angles_min[0], angles_max[0],
+                          round(angles_min[1],1), round(angles_max[1],1))+
+                  '\nalpha: [{}, {}] grad, beta: [{}, {}] grad'
+                  .format(round(angles_min[2],1), round(angles_max[2],1),
+                          round(angles_min[3],1), round(angles_max[3],1))+
+                  '\nBtor = {} T, Ipl = {} MA'.format(Btor, Ipl), fontsize=14)
+
+#%%
+
+def PlotSecAngles(traj_list, Btor, Ipl, Ebeam = 'all'):
+    traj_list = traj_list_passed
+    Btor = 1
+    Ipl = 1
+    Ebeam = 'all'
+
+    equal_energy_list = []
+    grouped_energy_dict = {}
+
+    for i in range(len(traj_list)):
+        if traj_list[i].Ebeam != traj_list[i-1].Ebeam:
+            equal_energy_list = []
+        # Get vector coords for last point in Secondary traj
+        Vx = traj_list[i].RV_Sec[-1,3] # Vx
+        Vy = traj_list[i].RV_Sec[-1,4] # Vy
+        Vz = traj_list[i].RV_Sec[-1,5] # Vz
+        angle_list = [traj_list[i].UA2, traj_list[i].UB2,
+                                  np.arctan(Vy/np.sqrt(Vx**2 + Vy**2))*180/np.pi,
+                                  np.arctan(-Vz/Vx)*180/np.pi]
+        equal_energy_list.append(angle_list)  # put angle arrays with
+                                               # equal energy in the
+                                               # same array
+
+        grouped_energy_dict[traj_list[i].Ebeam] = np.array(equal_energy_list)
+
+    x = []
+    y = []
+    for energy in grouped_energy_dict:
+        x = np.hstack([x,grouped_energy_dict[energy][:,0]])
+        y = np.hstack([y,grouped_energy_dict[energy][:,2]])
+
+    # Calculate the point density
+    xy = np.vstack([x,y])
+    z = gaussian_kde(xy)(xy)
+    # Sort the points by density, so that the densest points are plotted last
+    idx = z.argsort()
+    x, y, z = x[idx], y[idx], z[idx]
+
+    fig, ax1 = plt.subplots()
+    ax1.scatter(x, y, c=z, s=50, edgecolor='')
+    ax1.set_xlabel('UA2 (kV)')
+    ax1.set_ylabel('Exit alpha (grad)')
+    # Grids
+    ax1.grid(True)
+    ax1.grid(which='major', color = 'tab:gray') #draw primary grid
+    ax1.minorticks_on() # make secondary ticks on axes
+    ax1.grid(which='minor', color = 'tab:gray', linestyle = ':') # draw secondary grid
+
+    # Fonts and ticks
+    ax1.tick_params(axis='both', which='major', labelsize=18) # increase label font size
+    ax1.xaxis.set_tick_params(width=2) # increase tick size
+    ax1.yaxis.set_tick_params(width=2)
+
+
+
+#    ax1.scatter(A2list[:,0], sec_angles_list[:,0],
+#                             s=20, c=colors[i], alpha=0.5,
+#                             label=str(round(traj_list[i].Ebeam),1)+' keV')
+
+
+    #    ax1.legend(dot_list,
+    #               ('Low Outlier', 'LoLo', 'Lo', 'Average', 'Hi', 'HiHi', 'High Outlier'),
+    #               scatterpoints=1,
+    #               loc='lower left',
+    #               ncol=3,
+    #               fontsize=8)
+
+#    ax1.title('Ebeam:[{}, {}] keV, UA2:[{}, {}] kV, Btor = {} T, Ipl = {} MA'
+#                  .format(traj_list[0].Ebeam, traj_list[-1].Ebeam,
+#                         UA2_min,  UA2_max,
+#                          Btor, Ipl))
+#    return dot_list
+
+#    ax2.plot(A2list[:,1], sec_angles_list[:,1])
+#    ax2.axis('tight')
+#    ax2.set_xlabel('UB2 (kV)')
+#    ax2.set_ylabel('Exit beta (grad)')
+

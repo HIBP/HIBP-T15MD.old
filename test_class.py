@@ -1,10 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import path
-from matplotlib.patches import Rectangle
 from hibplib import *
-import pickle as pc
-import os
+
 
 # %% define class for trajectories
 class Traj():
@@ -23,9 +20,9 @@ class Traj():
         self.m = m
         self.Ebeam = Ebeam
         Vabs = np.sqrt(2 * Ebeam * 1.602176487E-16 / m)
-        V0 = np.array([-Vabs * np.cos(alpha) * np.cos(beta),
-                       -Vabs * np.sin(alpha),
-                       Vabs * np.cos(alpha) * np.sin(beta)])
+        V0 = np.array([-Vabs * np.cos(alpha*(np.pi/180)) * np.cos(beta*(np.pi/180)),
+                       -Vabs * np.sin(alpha*(np.pi/180)),
+                       Vabs * np.cos(alpha*(np.pi/180)) * np.sin(beta*(np.pi/180))])
         self.alpha = alpha
         self.beta = beta
         self.UA2 = UA2
@@ -197,49 +194,7 @@ class Traj():
 
         self.Fan = list_sec
 
-# %%
-def SaveTrajList(traj_list, Btor, Ipl, r_aim, dirname='output'):
-    ''' function saves list of Traj objects to pickle file
-    :param traj_list: list of trajectories
-    '''
 
-    if len(traj_list) == 0:
-        print('traj_list empty!')
-        return
-
-    Ebeam_list = []
-    UA2_list = []
-
-    for traj in traj_list:
-        Ebeam_list.append(traj.Ebeam)
-        UA2_list.append(traj.UA2)
-
-    dirname = dirname + '/' + 'B{}_I{}'.format(int(Btor), int(Ipl))
-    try:
-        os.mkdir(dirname) # create target Directory
-        print("Directory " , dirname ,  " created ")
-    except FileExistsError:
-        pass
-
-    fname = dirname + '/' + \
-                'E{}-{}_UA2{}-{}_alpha{}_beta{}_x{}y{}z{}.pkl'.format(int(min(Ebeam_list)),
-                  int(max(Ebeam_list)), int(min(UA2_list)), int(max(UA2_list)),
-                  int(round(traj.alpha*180/np.pi)),
-                  int(round(traj.beta*180/np.pi)),
-                  int(r_aim[0,0]*100), int(r_aim[0,1]*100), int(r_aim[0,2]*100))
-
-    with open(fname, 'wb') as f:
-        pc.dump(traj_list, f, -1)
-
-    print('\nSAVED LIST: \n' + fname)
-
-def ReadTrajList(fname, dirname='output'):
-    '''
-    import list of Traj objects from .pkl file
-    '''
-    with open(fname, 'rb') as f:
-        traj_list = pc.load(f)
-    return traj_list
 
 # %%
 ''' MAIN '''
@@ -264,9 +219,9 @@ if __name__ == '__main__':
     dUB2 = 15.0  # [kV/m]
 
     # alpha and beta angles of primary beamline
-    alpha_prim = 25.*(np.pi/180)  # rad
-    beta_prim = -10.*(np.pi/180)  # rad
-    gamma_prim = -90.*(np.pi/180)  # rad
+    alpha_prim = 30.  # grad
+    beta_prim = -10.  # grad
+    gamma_prim = -90.  # grad
     angles_prime = np.array([alpha_prim, beta_prim, gamma_prim])
 
     # coordinates of injection pipe [m]
@@ -282,22 +237,26 @@ if __name__ == '__main__':
     # distance from injection pipe to initial piont of trajectory [m]
     dist_0 = 0.6
 
+
+    r_dict = {}
     # coordinates of Alpha2 plates
-    xA2 = xpatr + dist_A2*np.cos(alpha_prim)*np.cos(beta_prim)
-    yA2 = ypatr + dist_A2*np.sin(alpha_prim)
-    zA2 = zpatr - dist_A2*np.cos(alpha_prim)*np.sin(beta_prim)
+    xA2 = xpatr + dist_A2*np.cos(alpha_prim*(np.pi/180))*np.cos(beta_prim*(np.pi/180))
+    yA2 = ypatr + dist_A2*np.sin(alpha_prim*(np.pi/180))
+    zA2 = zpatr - dist_A2*np.cos(alpha_prim*(np.pi/180))*np.sin(beta_prim*(np.pi/180))
     rA2 = np.array([xA2, yA2, zA2])
+    r_dict['A2'] = rA2
 
     # coordinates of Alpha2 plates
-    xB2 = xpatr + dist_B2*np.cos(alpha_prim)*np.cos(beta_prim)
-    yB2 = ypatr + dist_B2*np.sin(alpha_prim)
-    zB2 = zpatr - dist_B2*np.cos(alpha_prim)*np.sin(beta_prim)
+    xB2 = xpatr + dist_B2*np.cos(alpha_prim*(np.pi/180))*np.cos(beta_prim*(np.pi/180))
+    yB2 = ypatr + dist_B2*np.sin(alpha_prim*(np.pi/180))
+    zB2 = zpatr - dist_B2*np.cos(alpha_prim*(np.pi/180))*np.sin(beta_prim*(np.pi/180))
     rB2 = np.array([xB2, yB2, zB2])
+    r_dict['B2'] = rB2
 
     # coordinates of initial point of trajectory [m]
-    x0 = xpatr + dist_0*np.cos(alpha_prim)*np.cos(beta_prim)
-    y0 = ypatr + dist_0*np.sin(alpha_prim)
-    z0 = zpatr - dist_0*np.cos(alpha_prim)*np.sin(beta_prim)
+    x0 = xpatr + dist_0*np.cos(alpha_prim*(np.pi/180))*np.cos(beta_prim*(np.pi/180))
+    y0 = ypatr + dist_0*np.sin(alpha_prim*(np.pi/180))
+    z0 = zpatr - dist_0*np.cos(alpha_prim*(np.pi/180))*np.sin(beta_prim*(np.pi/180))
     r0 = np.array([x0, y0, z0])
 
     # timestep [sec]
@@ -315,14 +274,15 @@ if __name__ == '__main__':
     '''
     Electric field part
     '''
-    fname = 'elecfieldA2.dat'
-    A2_normals, A2_edges = PlacePlate(fname, rA2)
-    EA2 = ReadElecField(fname, rA2, angles_prime)
 
-    fname = 'elecfieldB2.dat'
-    B2_normals, B2_edges = PlacePlate(fname, rB2)
-    EB2 = ReadElecField(fname, rB2, angles_prime)
-    E = [EA2, EB2]
+    Plates_Geom =  PlacePlate(r_dict, angles_prime)
+    A2_normals = np.array([Plates_Geom['A2'][0], Plates_Geom['A2'][1]])
+    A2_edges = np.array([Plates_Geom['A2'][2], Plates_Geom['A2'][3]])
+
+    B2_normals = np.array([Plates_Geom['B2'][0], Plates_Geom['B2'][1]])
+    B2_edges = np.array([Plates_Geom['B2'][2], Plates_Geom['B2'][3]])
+
+    E = ReadElecField(r_dict, angles_prime)
 
     '''
     Magnetic field part
@@ -437,6 +397,6 @@ if __name__ == '__main__':
 # %%
     plot_grid(traj_list_passed, r_aim, Btor, Ipl, marker_E='')
     plot_scan(traj_list_passed, r_aim, 220., Btor, Ipl)
-    PlotSecAngles(traj_list,100)
+    PlotSecAngles(traj_list_passed, Btor, Ipl)
 # %%
-#    SaveTrajList(traj_list_passed, Btor, Ipl, r_aim)
+    SaveTrajList(traj_list_passed, Btor, Ipl, r_aim)
