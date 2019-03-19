@@ -8,19 +8,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.patches import Rectangle
-from mpl_toolkits import mplot3d
+from matplotlib.patches import Circle
+from matplotlib import ticker, cm
 import visvis as vv
 import wire
-from mpl_toolkits.mplot3d import Axes3D
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from hibplib import *
 from scipy.stats import gaussian_kde
+
 
 # %%
 '''############################################################################
 Functions for plotting Mafnetic field '''
 # %% visvis plot 3D
-def plot_3d(B, wires, cutoff=2):
+def plot_3d(B, wires, grid,
+            resolution, volume_corner1, volume_corner2,
+            cutoff=2):
     '''
     plot absolute values of B in 3d with visvis
     :param B: magnetic field values array (has 3 dimensions) [T]
@@ -109,7 +111,7 @@ def plot_2d(B, points, plane='xy', cutoff=2, n_contours=50):
         B[Babs > cutoff] = [np.nan, np.nan, np.nan]
         points = points[mask]
         Babs = np.linalg.norm(B, axis=1)
-        ax.quiver(points[:, 0], points[:, 1], B[:, 0], B[:, 1], scale=20.0)
+#        ax.quiver(points[:, 0], points[:, 1], B[:, 0], B[:, 1], scale=20.0)
 
         X = np.unique(points[:, 0])
         Y = np.unique(points[:, 1])
@@ -120,6 +122,10 @@ def plot_2d(B, points, plane='xy', cutoff=2, n_contours=50):
         plt.ylabel('y')
 
     plt.axis('equal')
+
+    clb = plt.colorbar(cs)
+    clb.set_label('V', labelpad=-40, y=1.05, rotation=0)
+
     plt.show()
 
 # %% matplotlib plot 3D
@@ -142,7 +148,8 @@ def plot_3dm(B, wires, points, cutoff=2):
 '''############################################################################
 Functions for plotting electric field'''
 # %%
-def plot_contours(X, Y, Z, U, n_contours=30):
+def plot_contours(X, Y, Z, U, n_contours=30,
+                  tick_width=2, axis_labelsize=18, title_labelsize=18):
     '''
     contour plot of potential U
     :param X, Y, Z: mesh ranges in X, Y and Z respectively [m]
@@ -150,29 +157,54 @@ def plot_contours(X, Y, Z, U, n_contours=30):
     :param n_contours:  number of planes to skip before plotting
     :return: None
     '''
-    fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
+#    fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
+    fig, ax1 = plt.subplots()
 
-    ax1.contour(X, Y, U[:,:,U.shape[2]//2].swapaxes(0, 1), n_contours)
+    # Grids
+    ax1.grid(True)
+    ax1.grid(which='major', color = 'tab:gray') #draw primary grid
+    ax1.minorticks_on() # make secondary ticks on axes
+    ax1.grid(which='minor', color = 'tab:gray', linestyle = ':') # draw secondary grid
+
+#    ax2.grid(True)
+#    ax2.grid(which='major', color = 'tab:gray') #draw primary grid
+#    ax2.minorticks_on() # make secondary ticks on axes
+#    ax2.grid(which='minor', color = 'tab:gray', linestyle = ':') # draw secondary grid
+
+    # Axis
+
+    ax1.xaxis.set_tick_params(width=tick_width) # increase tick size
+    ax1.yaxis.set_tick_params(width=tick_width)
     ax1.set_xlabel('X (m)')
     ax1.set_ylabel('Y (m)')
-    ax1.grid(True)
     ax1.axis('equal')
+
+#    ax2.xaxis.set_tick_params(width=tick_width) # increase tick size
+#    ax2.yaxis.set_tick_params(width=tick_width)
+#    ax2.set_xlabel('Z (m)')
+#    ax2.set_ylabel('Y (m)')
+#    ax2.axis('equal')
+
+    CS = ax1.contourf(X, Y, U[:,:,U.shape[2]//2].swapaxes(0, 1), n_contours)
+
     # add the edge of the domain
     domain = patches.Rectangle((min(X), min(Y)), max(X)-min(X), max(Y)-min(Y),
                                linewidth=2, linestyle='--', edgecolor='k',
                                facecolor='none')
     ax1.add_patch(domain)
 
-    ax2.contour(Z, Y, U[U.shape[0]//2, :, :], n_contours)
-    ax2.set_xlabel('Z (m)')
-    ax2.set_ylabel('Y (m)')
-    ax2.grid(True)
-    ax2.axis('equal')
-    # add the edge of the domain
-    domain = patches.Rectangle((min(Z), min(Y)), max(Z)-min(Z), max(Y)-min(Y),
-                               linewidth=2, linestyle='--', edgecolor='k',
-                               facecolor='none')
-    ax2.add_patch(domain)
+#    ax2.contour(Z, Y, U[U.shape[0]//2, :, :], n_contours)
+#
+#    # add the edge of the domain
+#    domain = patches.Rectangle((min(Z), min(Y)), max(Z)-min(Z), max(Y)-min(Y),
+#                               linewidth=2, linestyle='--', edgecolor='k',
+#                               facecolor='none')
+#    ax2.add_patch(domain)
+
+    ax1.set(xlim=(-0.12, 0.12), ylim=(-0.12, 0.12), autoscale_on=False)
+
+    clb = plt.colorbar(CS)
+    clb.set_label('V', labelpad=-40, y=1.05, rotation=0)
 
 # %%
 def plot_quiver(X, Y, Z, Ex, Ey, Ez):
@@ -472,33 +504,55 @@ def plot_fan_xy(traj_list, r_aim, A2_edges, B2_edges,
     ax1.yaxis.set_tick_params(width=tick_width)
     ax1.set_xlabel('X (m)')
     ax1.set_ylabel('Y (m)')
-    ax1.axis('equal')
 
     # get T-15 camera and plasma contours
     plot_geometry(ax1)
 
     # plot aim dot
-    ax1.plot(r_aim[0,0],r_aim[0,1],'*')
+#    ax1.plot(r_aim[0,0],r_aim[0,1],'*')
+
+
+#    for tr in traj_list:
+#        if tr.Ebeam == Ebeam and tr.UA2 == UA2:
+#            for i in tr.Fan:
+#                ax1.plot(i[:,0], i[:,1],color='r')
+#            #plot plates
+#            ax1.plot(A2_edges[0][[0,3],0],A2_edges[0][[0,3],1],  color='k', linewidth = 2)
+#            ax1.plot(A2_edges[1][[0,3],0],A2_edges[1][[0,3],1],  color='k', linewidth = 2)
+#            ax1.fill(B2_edges[0][:,0], B2_edges[0][:,1], fill=False, hatch='//', linewidth = 2)
+#            ax1.plot(tr.RV_Prim[:,0], tr.RV_Prim[:,1], color='k',  linewidth = 2)
+
+    #plot plates
+    ax1.plot(A2_edges[0][[0,3],0],A2_edges[0][[0,3],1],  color='k', linewidth = 2)
+    ax1.plot(A2_edges[1][[0,3],0],A2_edges[1][[0,3],1],  color='k', linewidth = 2)
+    ax1.fill(B2_edges[0][:,0], B2_edges[0][:,1], fill=False, hatch='//', linewidth = 2)
+
 
     for tr in traj_list:
         if tr.Ebeam == Ebeam and tr.UA2 == UA2:
-            #plot plates
-            ax1.plot(A2_edges[0][[0,3],0],A2_edges[0][[0,3],1],  color='k', linewidth = 2)
-            ax1.plot(A2_edges[1][[0,3],0],A2_edges[1][[0,3],1],  color='k', linewidth = 2)
-            ax1.fill(B2_edges[0][:,0], B2_edges[0][:,1], fill=False, hatch='//', linewidth = 2)
 
-            ax1.plot(tr.RV_Prim[:,0], tr.RV_Prim[:,1],color='k')
+#            ax1.plot(tr.RV_Sec[:,0], tr.RV_Sec[:,1],color='r')
+#            index = np.where(np.round(tr.RV_Prim[:,0],3) == np.round(tr.RV_Sec[0,0],3))[0][0]
+            index = np.where(np.round(tr.RV_Prim[:,0],3) == np.round(tr.Fan[15][0,0],3))[0][0] + 1
+            ax1.plot(tr.RV_Prim[:,0][:index],
+                     tr.RV_Prim[:,1][:index],
+                     color='k',  linewidth = 2)
 
-            last_points = []
-            for i in tr.Fan:
-                ax1.plot(i[:,0], i[:,1],color='r')
-                last_points.append(i[-1, :])
-            last_points = np.array(last_points)
+            ax1.plot(tr.Fan[15][:,0], tr.Fan[15][:,1],color='r')
 
-    ax1.set_title('E={} keV, UA2={} kV, Btor = {} T, Ipl = {} MA'.format(tr.Ebeam,tr.UA2, Btor, Ipl))
+#    ax1.set_title('E={} keV, UA2={} kV, Btor = {} T, Ipl = {} MA'.format(tr.Ebeam,tr.UA2, Btor, Ipl), fontsize=20)
+
+#    # these are matplotlib.patch.Patch properties
+#    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+#    # place a text box in upper left in axes coords
+#    ax1.text(0.5, 0.5, textstr, transform=ax1.transAxes, fontsize=18,
+#            verticalalignment='top', bbox=props)
+
+    ax1.set(xlim=(0.9, 4.28), ylim=(-1, 1.5), autoscale_on=False)
+
 
 # %%
-def plot_scan(traj_list, r_aim,
+def plot_scan(traj_list, r_aim,A2_edges, B2_edges,
               Ebeam, Btor, Ipl,
               tick_width=2, axis_labelsize=18, title_labelsize=18):
 
@@ -570,7 +624,7 @@ def plot_scan(traj_list, r_aim,
 
 
 # %%
-def plot_scan_xy(traj_list, r_aim,
+def plot_scan_xy(traj_list, r_aim, A2_edges, B2_edges,
               Ebeam, Btor, Ipl,
               tick_width=2, axis_labelsize=18, title_labelsize=18):
 
@@ -595,9 +649,9 @@ def plot_scan_xy(traj_list, r_aim,
     # Axis
     ax1.xaxis.set_tick_params(width=tick_width) # increase tick size
     ax1.yaxis.set_tick_params(width=tick_width)
-    ax1.set_xlabel('X (m)')
-    ax1.set_ylabel('Y (m)')
-    ax1.axis('equal')
+    ax1.set_xlabel('X (m)', fontsize=16)
+    ax1.set_ylabel('Y (m)', fontsize=16)
+
 
     # get T-15 camera and plasma contours
     plot_geometry(ax1)
@@ -614,19 +668,112 @@ def plot_scan_xy(traj_list, r_aim,
     UA2_max = np.amax(np.array(A2list))
     UA2_min = np.amin(np.array(A2list))
 
-    ax1.set_title('Ebeam={} keV, UA2:[{}, {}] kV, Btor = {} T, Ipl = {} MA'
-          .format(Ebeam, UA2_min,  UA2_max,
-                  Btor, Ipl))
+#    ax1.set_title('Ebeam={} keV, UA2:[{}, {}] kV, Btor = {} T, Ipl = {} MA'
+#          .format(Ebeam, UA2_min,  UA2_max,
+#                  Btor, Ipl))
+    ax1.plot(A2_edges[0][[0,3],0],A2_edges[0][[0,3],1],  color='k', linewidth = 2)
+    ax1.plot(A2_edges[1][[0,3],0],A2_edges[1][[0,3],1],  color='k', linewidth = 2)
+    ax1.fill(B2_edges[0][:,0], B2_edges[0][:,1], fill=False, hatch='//', linewidth = 2)
 
     for i in range(len(traj_list)):
         if traj_list[i].Ebeam == Ebeam:
             # plot trajectories
             ax1.plot(traj_list[i].RV_Prim[:,0], traj_list[i].RV_Prim[:,1], color='k')
             ax1.plot(traj_list[i].RV_Sec[:,0], traj_list[i].RV_Sec[:,1], color='r')
+            print(traj_list[i].UA2)
+            try:
+                RV_sec_first = np.vstack((RV_sec_first, traj_list[i].RV_Sec[0,:2]))
+            except UnboundLocalError:
+                RV_sec_first = traj_list[i].RV_Sec[0,:2]
 
-    ax1.set(xlim=(2.0, 2.1), ylim=(-1.5, 1.5), autoscale_on=False)
+    ax1.plot(RV_sec_first[:,0],RV_sec_first[:,1],'o', color='darkred', linestyle='--' )
 
-# %%
+    ax1.set(xlim=(0.91, 4.28), ylim=(-1, 1.5), autoscale_on=False)
+    ax1.tick_params(axis='both', which='major', labelsize=16)
+
+#%%
+def plot_scan_xz(traj_list, r_aim, A2_edges, B2_edges,
+              Ebeam, Btor, Ipl,
+              tick_width=2, axis_labelsize=18, title_labelsize=18):
+
+    '''
+    plot scan for one beam with particular energy in 2 planes: xy, xz
+    :param traj_list: list of trajectories
+    :param r_aim: aim dot coordinates [m]
+    :param Ebeam: beam energy [keV]
+    :param Btor: toroidal magnetic field [T]
+    :param Ipl: plasma current [MA]
+    :return: None
+    '''
+
+    fig, ax1 = plt.subplots(figsize=(8,7.5))
+
+    # Grids
+    ax1.grid(True)
+    ax1.grid(which='major', color = 'tab:gray') #draw primary grid
+    ax1.minorticks_on() # make secondary ticks on axes
+    ax1.grid(which='minor', color = 'tab:gray', linestyle = ':') # draw secondary grid
+
+    # Axis
+    ax1.xaxis.set_tick_params(width=tick_width) # increase tick size
+    ax1.yaxis.set_tick_params(width=tick_width)
+    ax1.set_ylabel('X (m)', fontsize=16)
+    ax1.set_xlabel('Z (m)', fontsize=16)
+
+
+    # plot aim dot
+#    ax1.plot(r_aim[0,2],r_aim[0,0],'O')
+    # plot geometry
+    ax1.add_patch(plt.Circle((0,0), radius=2.4, fill=False,color = 'tab:blue'))
+    ax1.add_patch(plt.Circle((0,0), radius=2.1, fill=False,color = 'tab:orange'))
+
+    # get the list of UA2
+    A2list = []
+    for i in range(len(traj_list)):
+        if traj_list[i].Ebeam == Ebeam:
+            A2list.append(traj_list[i].UA2)
+
+    #find UA2 max and min
+    UA2_max = np.amax(np.array(A2list))
+    UA2_min = np.amin(np.array(A2list))
+
+#    ax1.set_title('Ebeam={} keV, UA2:[{}, {}] kV, Btor = {} T, Ipl = {} MA'
+#          .format(Ebeam, UA2_min,  UA2_max,
+#                  Btor, Ipl))
+
+    for i in range(len(traj_list)):
+        RV_prime_cut = np.empty(3)
+        if traj_list[i].Ebeam == Ebeam:
+#            for k in range(traj_list[i].RV_Prim.shape[0]):
+#                 if traj_list[i].RV_Prim[k,2] >= traj_list[i].RV_Sec[0,2]:
+#                     RV_prime_cut = np.vstack((RV_prime_cut, traj_list[i].RV_Prim[k,:3]))
+#                 else:
+#                     break
+#            RV_prime_cut = np.delete(RV_prime_cut, 0, axis=0)
+
+            # plot trajectories
+            ax1.plot(traj_list[i].RV_Prim[:,2],
+                     traj_list[i].RV_Prim[:,2],
+                     color='k', alpha=0.7)
+            ax1.plot(traj_list[i].RV_Sec[:,2], traj_list[i].RV_Sec[:,0], color='r')
+            print(traj_list[i].UA2)
+            try:
+                RV_sec_first = np.vstack((RV_sec_first, traj_list[i].RV_Sec[0,[2,0]]))
+            except UnboundLocalError:
+                RV_sec_first = traj_list[i].RV_Sec[0,[2,0]]
+
+    ax1.plot(RV_sec_first[:,0],RV_sec_first[:,1],'o', color='darkred', linestyle='--' )
+
+    ax1.plot(B2_edges[0][[0,3],2],B2_edges[0][[0,3],0],
+             color='k', linewidth = 2)
+    ax1.plot(B2_edges[1][[0,3],2],B2_edges[1][[0,3],0],
+             color='k', linewidth = 2)
+    ax1.fill(A2_edges[0][:,2], A2_edges[0][:,0], fill=False,
+             hatch='//', linewidth = 2)
+    ax1.set(xlim=(-0.75, 0.75), ylim=(1.4, 2.8), autoscale_on=False)
+    ax1.tick_params(axis='both', which='major', labelsize=16)
+
+#%%
 def plot_grid(traj_list, r_aim, Btor, Ipl,
               tick_width=2, axis_labelsize=18, title_labelsize=18,
               linestyle_A2='--', linestyle_E='-',
@@ -692,10 +839,10 @@ def plot_grid(traj_list, r_aim, Btor, Ipl,
     UA2_max = np.amax(np.array(A2list))
     UA2_min = np.amin(np.array(A2list))
 
-    ax1.set_title('Ebeam:[{}, {}] keV, UA2:[{}, {}] kV, Btor = {} T, Ipl = {} MA'
-                  .format(traj_list[0].Ebeam, traj_list[-1].Ebeam,
-                         UA2_min,  UA2_max,
-                          Btor, Ipl))
+#    ax1.set_title('Ebeam:[{}, {}] keV, UA2:[{}, {}] kV, Btor = {} T, Ipl = {} MA'
+#                  .format(traj_list[0].Ebeam, traj_list[-1].Ebeam,
+#                         UA2_min,  UA2_max,
+#                          Btor, Ipl))
 
     # plot raim
     ax1.plot(r_aim[0,0],r_aim[0,1],'*')
@@ -746,6 +893,8 @@ def plot_grid(traj_list, r_aim, Btor, Ipl,
 
     ax1.legend()
 
+#    ax1.set(xlim=(0.9, 4.28), ylim=(-1, 1.5), autoscale_on=False)
+
 #%%
 def plot_grid_xy(traj_list, r_aim, Btor, Ipl, legend=True, zoom=True, linestyle_A2='--',
                   linestyle_E='-', marker_A2='*', marker_E='p',
@@ -760,21 +909,20 @@ def plot_grid_xy(traj_list, r_aim, Btor, Ipl, legend=True, zoom=True, linestyle_
     '''
 
     fig, ax1 = plt.subplots(figsize=(8,7.5))
-    # Grids
+#    # Grids
     ax1.grid(True)
     ax1.grid(which='major', color = 'tab:gray') #draw primary grid
     ax1.minorticks_on() # make secondary ticks on axes
     ax1.grid(which='minor', color = 'tab:gray', linestyle = ':') # draw secondary grid
-
-    # Fonts and ticks
-    plt.tick_params(axis='both', which='major', labelsize=18) # increase label font size
+#
+#    # Fonts and ticks
+    plt.tick_params(axis='both', which='major', labelsize=16) # increase label font size
     ax1.xaxis.set_tick_params(width=2) # increase tick size
     ax1.yaxis.set_tick_params(width=2)
-    ax1.set_xlabel('X (m)')
-    ax1.set_ylabel('Y (m)')
-    ax1.axis('equal')
+    ax1.set_xlabel('X (m)', fontsize=16)
+    ax1.set_ylabel('Y (m)', fontsize=16)
 
-    #get T-15 camera and plasma contours
+#    #get T-15 camera and plasma contours
     plot_geometry(ax1)
 
     # get the list of A2 and Ebeam
@@ -799,10 +947,10 @@ def plot_grid_xy(traj_list, r_aim, Btor, Ipl, legend=True, zoom=True, linestyle_
     UA2_max = np.amax(np.array(A2list))
     UA2_min = np.amin(np.array(A2list))
 
-    ax1.set_title('Ebeam:[{}, {}] keV, UA2:[{}, {}] kV, Btor = {} T, Ipl = {} MA'
-                  .format(traj_list[0].Ebeam, traj_list[-1].Ebeam,
-                         UA2_min,  UA2_max,
-                          Btor, Ipl))
+#    ax1.set_title('Ebeam:[{}, {}] keV, UA2:[{}, {}] kV, Btor = {} T, Ipl = {} MA'
+#                  .format(traj_list[0].Ebeam, traj_list[-1].Ebeam,
+#                         UA2_min,  UA2_max,
+#                          Btor, Ipl))
 
     #make a grid of constant A2
     for i_A2 in range(0,N_A2,1):
@@ -840,13 +988,14 @@ def plot_grid_xy(traj_list, r_aim, Btor, Ipl, legend=True, zoom=True, linestyle_
                  label=str(round(Elist[i_E],1))+' keV')
 
 
-    ax1.plot(r_aim[0,0],r_aim[0,1],'*')
+#    ax1.plot(r_aim[0,0],r_aim[0,1],'*')
 
 
     if legend:
-        ax1.legend()
+        ax1.legend(title='Tl', fontsize = 16, title_fontsize = 24)
     if zoom:
-        ax1.set(xlim=(1.25, 2.5), ylim=(-0.5, 1.2), autoscale_on=False)
+        ax1.set(xlim=(1.3, 2.5), ylim=(-0.4, 1.1), autoscale_on=False)
+#        ax1.set(xlim=(0, 3), ylim=(-0.4, 2), autoscale_on=False)
 
     plt.show()
 

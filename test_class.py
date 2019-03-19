@@ -208,11 +208,11 @@ if __name__ == '__main__':
 
     # initial beam energy range
     dEbeam = 20.
-    Ebeam_range = np.arange(80., 400. + dEbeam, dEbeam)  # [keV]
+    Ebeam_range = np.arange(60., 400. + dEbeam, dEbeam)  # [keV]
 
     #A2 plates voltage
     dUA2 = 10.0
-    UA2_range = np.arange(-30., 60. + dUA2, dUA2)  # [kV]
+    UA2_range = np.arange(-20., 80. + dUA2, dUA2)  # [kV]
 
     #B2 plates voltage
     UB2 = 10.0  # [kV]
@@ -220,7 +220,7 @@ if __name__ == '__main__':
 
     # alpha and beta angles of primary beamline
     alpha_prim = 30.  # grad
-    beta_prim = -10.  # grad
+    beta_prim = -0.  # grad
     gamma_prim = -90.  # grad
     angles_prime = np.array([alpha_prim, beta_prim, gamma_prim])
 
@@ -262,7 +262,7 @@ if __name__ == '__main__':
     # timestep [sec]
     dt = 1e-7
 
-    r_aim = np.array([[2.75, 0., 0.]])
+    r_aim = np.array([[2.5, -0.2 , 0.]])
 #    r_aim = np.array([[2.75, -0.5, 0.]])
 
     # chamber entrance coordinates
@@ -396,7 +396,7 @@ if __name__ == '__main__':
 
 # %%
     plot_grid(traj_list_passed, r_aim, Btor, Ipl, marker_E='')
-    plot_scan(traj_list_passed, r_aim, 220., Btor, Ipl)
+    plot_scan(traj_list_passed, r_aim, A2_edges, B2_edges, 220., Btor, Ipl)
     PlotSecAngles(traj_list_passed, Btor, Ipl)
 # %%
     SaveTrajList(traj_list_passed, Btor, Ipl, r_aim)

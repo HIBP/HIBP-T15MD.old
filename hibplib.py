@@ -440,8 +440,8 @@ def SaveTrajList(traj_list, Btor, Ipl, r_aim, dirname='output'):
     fname = dirname + '/' + \
                 'E{}-{}_UA2{}-{}_alpha{}_beta{}_x{}y{}z{}.pkl'.format(int(min(Ebeam_list)),
                   int(max(Ebeam_list)), int(min(UA2_list)), int(max(UA2_list)),
-                  int(round(traj.alpha*180/np.pi)),
-                  int(round(traj.beta*180/np.pi)),
+                  int(round(traj.alpha)),
+                  int(round(traj.beta)),
                   int(r_aim[0,0]*100), int(r_aim[0,1]*100), int(r_aim[0,2]*100))
 
     with open(fname, 'wb') as f:

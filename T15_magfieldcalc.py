@@ -296,7 +296,7 @@ if __name__ == '__main__':
 
         # Define grid points to caculate B
         resolution = 0.1    # [m]
-        volume_corner1 = (0, -2.0, -0.75) # xmin ymin zmin [m]
+        volume_corner1 = (0, -2.5, -0.75) # xmin ymin zmin [m]
         volume_corner2 = (3.5, 2.5, 0.75) # xmax ymax zmax [m]
 
         # create grid of points
@@ -317,34 +317,34 @@ if __name__ == '__main__':
         # calculate B field at given points
         B_tor, wires_tor = calcBtor(points)
 
-        tokameq_file = '1MA_sn.txt' # Txt with plasma current calculated in Tokameq
-        B_pl, wires_pl = calcBplasma(points, tokameq_file, Ipl)
+#        tokameq_file = '1MA_sn.txt' # Txt with plasma current calculated in Tokameq
+#        B_pl, wires_pl = calcBplasma(points, tokameq_file, Ipl)
 
         pf_coils = importPFCoils('PFCoils.dat')
         B_pol_dict, wires_pol = calcBpol(pf_coils, points)
 
-#        wires = wires_pol + wires_tor + wires_pl
+        wires = wires_pol + wires_tor # + wires_pl[0,-1,20]
 
         cutoff = 10.0
         Babs_tor = np.linalg.norm(B_tor, axis=1)
         B_tor[Babs_tor > cutoff] = [np.nan, np.nan, np.nan]
 
-        Babs_pl = np.linalg.norm(B_pl, axis=1)
-        B_pl[Babs_pl > cutoff] = [np.nan, np.nan, np.nan]
+#        Babs_pl = np.linalg.norm(B_pl, axis=1)
+#        B_pl[Babs_pl > cutoff] = [np.nan, np.nan, np.nan]
 
         fname='magfieldTor.dat'
-        SaveMagneticField(fname, B_tor)
+#        SaveMagneticField(fname, B_tor)
 
-        fname='magfieldPlasm{}.dat'.format(tokameq_file[13:16])
-        SaveMagneticField(fname, B_pl)
+#        fname='magfieldPlasm{}.dat'.format(tokameq_file[13:16])
+#        SaveMagneticField(fname, B_pl)
 
-        B_check = B_tor*Btor + B_pl*Ipl # in B we will summatize filed values from all circuits
+        B_check = B_tor * Btor # + B_pl*Ipl # in B we will summatize filed values from all circuits
 
         for coil in B_pol_dict.keys():
             Babs_pol = np.linalg.norm(B_pol_dict[coil], axis=1)
             B_pol_dict[coil][Babs_pol > cutoff] = [np.nan, np.nan, np.nan]
             fname='magfield{}.dat'.format(coil)
-            SaveMagneticField(fname, B_pol_dict[coil])
+#            SaveMagneticField(fname, B_pol_dict[coil])
             B_check += B_pol_dict[coil]
 
         print('\n\nCalculated magnetic field with folowing params:\n' +
@@ -353,9 +353,9 @@ if __name__ == '__main__':
               ' volume_corner1 = {} [m]\n'.format(volume_corner1) +
               ' volume_corner2 = {} [m]\n'.format(volume_corner2))
 
-#    cutoff = 10.0
-#    Babs = np.linalg.norm(B_check, axis=1)
-#    B_check[Babs > cutoff] = [np.nan, np.nan, np.nan]
+        cutoff = 10.0
+        Babs = np.linalg.norm(B_check, axis=1)
+        B_check[Babs > cutoff] = [np.nan, np.nan, np.nan]
 
 # %%
     # make an interpolation of B
