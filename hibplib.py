@@ -448,8 +448,31 @@ def SaveTrajList(traj_list, Btor, Ipl, r_aim, dirname='output'):
         pc.dump(traj_list, f, -1)
 
     print('\nSAVED LIST: \n' + fname)
-
 #%%
+
+
+def save_png(fig, name, save_dir = 'Results/Grids'):
+    """
+    Saves picture as name.png
+    
+    Args:
+    :fig - array of figures to save
+    :name - array of picture names
+    :save_dir - directory used to store results
+    """
+
+    # check wether directory exist and if not - create one
+    if not os.path.isdir(save_dir):
+        os.makedirs(save_dir)
+        print('LOG: {} directory created'.format(save_dir))
+    print('LOG: Saving pictures to {}'.format(save_dir+'/'))
+    for fig, name in zip(fig, name):
+        # save fig with tight layout
+        fig_savename = str(name + '.png')
+        fig.savefig(save_dir + '/'+ fig_savename, bbox_inches='tight')
+        print('LOG: Figure ' + fig_savename + ' saved')
+#%%
+
 
 def ReadTrajList(fname, dirname='output'):
     '''

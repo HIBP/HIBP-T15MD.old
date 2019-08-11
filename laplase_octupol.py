@@ -11,6 +11,7 @@ import time
 from hibplib import Rotate
 import os
 import errno
+from tqdm import tqdm
 '''
 Calculate electric potential and electric field between two plates
 '''
@@ -207,7 +208,9 @@ if __name__ == '__main__':
     # Stack both plates arrays into one dict
     plates_rotated = {}
     plates_mask = {}
-    for angle in range(0, -180, int(-360/n_plates)):
+    
+    print("\nLOG: Calculation zone and mask definition started")
+    for angle in tqdm(range(0, -180, int(-360/n_plates))):
         plates_rotated[angle] = PlateCoords(plate_length, plate_thic,
                                             plate_width, gap,
                                             plts2_alpha, plts2_beta, angle)
@@ -226,8 +229,8 @@ if __name__ == '__main__':
 # %%
     eps = 1e-5
 
-
-    for angle in range(0, -180, int(-360/n_plates)):
+    print("\nLOG: Voltage calculation started\n")
+    for angle in tqdm(range(0, -180, int(-360/n_plates))):
         # calculation loop
         step = 0
         t1 = time.time()

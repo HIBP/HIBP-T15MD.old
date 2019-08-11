@@ -88,10 +88,10 @@ def calcBpol(pf_coils, points, nx=3, ny=3):
 
     disc_len = 0.2  # discretisation length for wire [m]
     B = {}
+    wires = []
     for coil in pf_coils.keys():
 
         print(coil)
-        wires = []
         xc = pf_coils[coil][0]
         yc = pf_coils[coil][1]
         dx = pf_coils[coil][2]
@@ -284,79 +284,82 @@ def SaveMagneticField(fname, B, dirname="magfield"):
 #%%
 if __name__ == '__main__':
 
-    if input("Recalculate magnetic fields [y/n]? ") == 'y':
-        try:
-            del B # delete previous magnetic field to avoid m
-            print('\nDeleted previous magnetic field')
-        except NameError:
-            print('\nNo previous magnetic field found')
+    #if input("Recalculate magnetic fields [y/n]? ") == 'y':
+    try:
+        del B # delete previous magnetic field to avoid m
+        print('\nDeleted previous magnetic field')
+    except NameError:
+        print('\nNo previous magnetic field found')
 
-        Btor = 1.0 # Toroidal field [Tl]
-        Ipl = 1.0  # Plasma current [MA]
+    Btor = 1.0 # Toroidal field [Tl]
+    Ipl = 1.0  # Plasma current [MA]
 
-        # Define grid points to caculate B
-        resolution = 0.1    # [m]
-        volume_corner1 = (0, -2.5, -0.75) # xmin ymin zmin [m]
-        volume_corner2 = (3.5, 2.5, 0.75) # xmax ymax zmax [m]
+    # Define grid points to caculate B
+    resolution = 0.1    # [m]
+    volume_corner1 = (0, -3.0, -0.2) # xmin ymin zmin [m]
+    volume_corner2 = (3.5, 2.5, 0.2) # xmax ymax zmax [m]
 
-        # create grid of points
-        grid = np.mgrid[volume_corner1[0]:volume_corner2[0]:resolution,
-                        volume_corner1[1]:volume_corner2[1]:resolution,
-                        volume_corner1[2]:volume_corner2[2]:resolution]
+    # create grid of points
+    grid = np.mgrid[volume_corner1[0]:volume_corner2[0]:resolution,
+                    volume_corner1[1]:volume_corner2[1]:resolution,
+                    volume_corner1[2]:volume_corner2[2]:resolution]
 
-        # create list of grid points
-        points = np.vstack(map(np.ravel, grid)).T
+    # create list of grid points
+    points = np.vstack(map(np.ravel, grid)).T
 
-        print('\n\nCalculating magnetic field with folowing params:\n' +
-               ' Btor = {} [T]\n Ipl = {} [MA]\n'.format(Btor,Ipl)  +
-               ' resolution = {}\n'.format(resolution) +
-               ' volume_corner1 = {} [m]\n'.format(volume_corner1) +
-               ' volume_corner2 = {} [m]\n'.format(volume_corner2))
+    print('\n\nCalculating magnetic field with folowing params:\n' +
+           ' Btor = {} [T]\n Ipl = {} [MA]\n'.format(Btor,Ipl)  +
+           ' resolution = {}\n'.format(resolution) +
+           ' volume_corner1 = {} [m]\n'.format(volume_corner1) +
+           ' volume_corner2 = {} [m]\n'.format(volume_corner2))
 
 
-        # calculate B field at given points
-        B_tor, wires_tor = calcBtor(points)
+    # calculate B field at given points
+    B_tor, wires_tor = calcBtor(points)
 
-#        tokameq_file = '1MA_sn.txt' # Txt with plasma current calculated in Tokameq
-#        B_pl, wires_pl = calcBplasma(points, tokameq_file, Ipl)
+    tokameq_file = '2MA_sn.txt' # Txt with plasma current calculated in Tokameq
+    B_pl, wires_pl = calcBplasma(points, tokameq_file, Ipl)
 
-        pf_coils = importPFCoils('PFCoils.dat')
-        B_pol_dict, wires_pol = calcBpol(pf_coils, points)
+    pf_coils = importPFCoils('PFCoils.dat')
+    B_pol_dict, wires_pol = calcBpol(pf_coils, points)
 
-        wires = wires_pol + wires_tor # + wires_pl[0,-1,20]
+    wires = wires_pol + wires_tor #+ wires_pl
 
-        cutoff = 10.0
-        Babs_tor = np.linalg.norm(B_tor, axis=1)
-        B_tor[Babs_tor > cutoff] = [np.nan, np.nan, np.nan]
+    cutoff = 10.0
+    Babs_tor = np.linalg.norm(B_tor, axis=1)
+    B_tor[Babs_tor > cutoff] = [np.nan, np.nan, np.nan]
 
-#        Babs_pl = np.linalg.norm(B_pl, axis=1)
-#        B_pl[Babs_pl > cutoff] = [np.nan, np.nan, np.nan]
+    Babs_pl = np.linalg.norm(B_pl, axis=1)
+    B_pl[Babs_pl > cutoff] = [np.nan, np.nan, np.nan]
 
-        fname='magfieldTor.dat'
+    fname='magfieldTor.dat'
 #        SaveMagneticField(fname, B_tor)
 
-#        fname='magfieldPlasm{}.dat'.format(tokameq_file[13:16])
+    fname='magfieldPlasm{}.dat'.format(tokameq_file[13:16])
 #        SaveMagneticField(fname, B_pl)
 
-        B_check = B_tor * Btor # + B_pl*Ipl # in B we will summatize filed values from all circuits
+    B_check = B_tor*Btor + B_pl*Ipl # in B we will summatize filed values from all circuits
 
-        for coil in B_pol_dict.keys():
-            Babs_pol = np.linalg.norm(B_pol_dict[coil], axis=1)
-            B_pol_dict[coil][Babs_pol > cutoff] = [np.nan, np.nan, np.nan]
-            fname='magfield{}.dat'.format(coil)
+    for coil in B_pol_dict.keys():
+        Babs_pol = np.linalg.norm(B_pol_dict[coil], axis=1)
+        B_pol_dict[coil][Babs_pol > cutoff] = [np.nan, np.nan, np.nan]
+        fname='magfield{}.dat'.format(coil)
 #            SaveMagneticField(fname, B_pol_dict[coil])
-            B_check += B_pol_dict[coil]
+        B_check += B_pol_dict[coil]
 
-        print('\n\nCalculated magnetic field with folowing params:\n' +
-              ' Btor = {} [T]\n Ipl = {} [MA]\n'.format(Btor,Ipl)  +
-              ' resolution = {}\n'.format(resolution) +
-              ' volume_corner1 = {} [m]\n'.format(volume_corner1) +
-              ' volume_corner2 = {} [m]\n'.format(volume_corner2))
+    print('\n\nCalculated magnetic field with folowing params:\n' +
+          ' Btor = {} [T]\n Ipl = {} [MA]\n'.format(Btor,Ipl)  +
+          ' resolution = {}\n'.format(resolution) +
+          ' volume_corner1 = {} [m]\n'.format(volume_corner1) +
+          ' volume_corner2 = {} [m]\n'.format(volume_corner2))
 
-        cutoff = 10.0
-        Babs = np.linalg.norm(B_check, axis=1)
-        B_check[Babs > cutoff] = [np.nan, np.nan, np.nan]
+#    cutoff = 10.0
+#    Babs = np.linalg.norm(B_check, axis=1)
+#    B_check[Babs > cutoff] = [np.nan, np.nan, np.nan]
 
+#%%
+    plot_3d(B_check, wires, volume_corner1, volume_corner2, grid, resolution, cutoff=5.0)
+#    plot_2d(B_check, points, plane='xy', cutoff=2, n_contours=50)
 # %%
     # make an interpolation of B
 #    x = np.arange(volume_corner1[0], volume_corner2[0], resolution)
