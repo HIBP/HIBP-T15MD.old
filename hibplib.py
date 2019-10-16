@@ -412,7 +412,9 @@ def ReturnElecField(xyz, Ein, U):
 
 # %%
 def SaveTrajList(traj_list, Btor, Ipl, r_aim, dirname='output'):
-    ''' function saves list of Traj objects to pickle file
+    ''' 
+    Save list of Traj objects to pickle file
+    
     :param traj_list: list of trajectories
     '''
 

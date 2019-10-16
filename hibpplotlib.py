@@ -413,6 +413,94 @@ def easy_plotXZ(tr, r_aim):
     plt.axis('equal')
 
 #%%
+def plot_traj_xy(traj_list, r_aim, A2_edges, B2_edges,
+             Ebeam, UA2, Btor, Ipl,
+             tick_width=2, font_size=24, title_fontsize=18, 
+             axis_enabled = True):
+    '''
+    plot fan of trajectories in xy
+    :param traj_list: list of trajectories
+    :param r_aim: aim dot coordinates [m]
+    :param A2_edges: A2 edges coordinates [m]
+    :param B2_edges: B2 edges coordinates [m]
+    :param Ebeam: beam energy [keV]
+    :param Btor: toroidal magnetic field [T]
+    :param Ipl: plasma current [MA]
+    :return: None
+    '''
+    fig, ax1 = plt.subplots()
+
+    # Grids
+    ax1.grid(True)
+    ax1.grid(which='major', color = 'tab:gray') #draw primary grid
+    ax1.minorticks_on() # make secondary ticks on axes
+    ax1.grid(which='minor', color = 'tab:gray', linestyle = ':') # draw secondary grid
+
+    # Fonts and ticks
+    plt.tick_params(axis='both', which='major', labelsize=font_size) # increase label font size
+    ax1.xaxis.set_tick_params(width=2) # increase tick size
+    ax1.yaxis.set_tick_params(width=2)
+    ax1.set_xlabel('X (m)', fontsize=font_size)
+    ax1.set_ylabel('Y (m)', fontsize=font_size)
+
+    # plot axis
+    if axis_enabled:
+        axis_linewidth = 1.5
+        axis_color = 'k'
+        axis_linestyle = '--'
+        ax1.plot([1.5,1.5],[-3,2.4], 
+                 linestyle=axis_linestyle, color=axis_color, 
+                 linewidth=axis_linewidth)
+        ax1.plot([0.2,3.4],[0.,0.],
+                 linestyle=axis_linestyle, color=axis_color, 
+                 linewidth=axis_linewidth)
+
+    # get T-15 camera and plasma contours
+    plot_geometry(ax1)
+
+    # plot aim dot
+#    ax1.plot(r_aim[0,0],r_aim[0,1],'*')
+
+
+#    for tr in traj_list:
+#        if tr.Ebeam == Ebeam and tr.UA2 == UA2:
+#            for i in tr.Fan:
+#                ax1.plot(i[:,0], i[:,1],color='r')
+#            #plot plates
+#            ax1.plot(A2_edges[0][[0,3],0],A2_edges[0][[0,3],1],  color='k', linewidth = 2)
+#            ax1.plot(A2_edges[1][[0,3],0],A2_edges[1][[0,3],1],  color='k', linewidth = 2)
+#            ax1.fill(B2_edges[0][:,0], B2_edges[0][:,1], fill=False, hatch='//', linewidth = 2)
+#            ax1.plot(tr.RV_Prim[:,0], tr.RV_Prim[:,1], color='k',  linewidth = 2)
+
+    #plot plates
+    ax1.plot(A2_edges[0][[0,3],0],A2_edges[0][[0,3],1],  color='k', linewidth = 2)
+    ax1.plot(A2_edges[1][[0,3],0],A2_edges[1][[0,3],1],  color='k', linewidth = 2)
+    ax1.fill(B2_edges[0][:,0], B2_edges[0][:,1], fill=False, hatch='//', linewidth = 2)
+
+
+    for tr in traj_list:
+        if tr.Ebeam == Ebeam and tr.UA2 == UA2:
+
+#            ax1.plot(tr.RV_Sec[:,0], tr.RV_Sec[:,1],color='r')
+#            index = np.where(np.round(tr.RV_Prim[:,0],3) == np.round(tr.RV_Sec[0,0],3))[0][0]
+            index = np.where(np.round(tr.RV_Prim[:,0],3) == np.round(tr.Fan[15][0,0],3))[0][0] + 1
+            ax1.plot(tr.RV_Prim[:,0][:index],
+                     tr.RV_Prim[:,1][:index],
+                     color='k',  linewidth = 2)
+
+            ax1.plot(tr.Fan[15][:,0], tr.Fan[15][:,1],color='r')
+
+#    ax1.set_title('E={} keV, UA2={} kV, Btor = {} T, Ipl = {} MA'.format(tr.Ebeam,tr.UA2, Btor, Ipl), fontsize=20)
+
+#    # these are matplotlib.patch.Patch properties
+#    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+#    # place a text box in upper left in axes coords
+#    ax1.text(0.5, 0.5, textstr, transform=ax1.transAxes, fontsize=18,
+#            verticalalignment='top', bbox=props)
+
+    ax1.set(xlim=(0.9, 4.28), ylim=(-1, 1.5), autoscale_on=False)
+
+#%%
 def plot_fan(traj_list, r_aim, A2_edges, B2_edges,
              Ebeam, UA2, Btor, Ipl,
              tick_width=2, axis_labelsize=18, title_labelsize=18):
@@ -506,11 +594,11 @@ def plot_fan(traj_list, r_aim, A2_edges, B2_edges,
 #            ax3.plot(last_points[:, 2], last_points[:, 1], '--o', color='r')
 
     ax1.set_title('E={} keV, UA2={} kV, UB2={} kV, Btor={} T, Ipl={} MA'.format(tr.Ebeam,tr.UA2, tr.UB2, Btor, Ipl))
-
 #%%
 def plot_fan_xy(traj_list, r_aim, A2_edges, B2_edges,
              Ebeam, UA2, Btor, Ipl,
-             tick_width=2, axis_labelsize=18, title_labelsize=18):
+             tick_width=2, font_size=24, title_fontsize=18, 
+             axis_enabled = True):
     '''
     plot fan of trajectories in xy
     :param traj_list: list of trajectories
@@ -522,7 +610,13 @@ def plot_fan_xy(traj_list, r_aim, A2_edges, B2_edges,
     :param Ipl: plasma current [MA]
     :return: None
     '''
-    fig, ax1 = plt.subplots()
+    
+    figure_name = 'Fan_E{}_U{}_alpha{}_beta{}_aim{}_{}_{}'\
+                           .format(Ebeam, UA2, 
+                                   traj_list[-1].alpha, traj_list[-1].beta,
+                                   r_aim[0,0], r_aim[0,1], r_aim[0,2])
+
+    fig, ax1 = plt.subplots(figsize=(8,7.5), num=figure_name)
 
     # Grids
     ax1.grid(True)
@@ -530,28 +624,27 @@ def plot_fan_xy(traj_list, r_aim, A2_edges, B2_edges,
     ax1.minorticks_on() # make secondary ticks on axes
     ax1.grid(which='minor', color = 'tab:gray', linestyle = ':') # draw secondary grid
 
-    # Axis
-    ax1.xaxis.set_tick_params(width=tick_width) # increase tick size
-    ax1.yaxis.set_tick_params(width=tick_width)
-    ax1.set_xlabel('X (m)')
-    ax1.set_ylabel('Y (m)')
+    # Fonts and ticks
+    plt.tick_params(axis='both', which='major', labelsize=font_size) # increase label font size
+    ax1.xaxis.set_tick_params(width=2) # increase tick size
+    ax1.yaxis.set_tick_params(width=2)
+    ax1.set_xlabel('X (m)', fontsize=font_size)
+    ax1.set_ylabel('Y (m)', fontsize=font_size)
+
+    # plot axis
+    if axis_enabled:
+        axis_linewidth = 1.5
+        axis_color = 'k'
+        axis_linestyle = '--'
+        ax1.plot([1.5,1.5],[-3,2.4], 
+                 linestyle=axis_linestyle, color=axis_color, 
+                 linewidth=axis_linewidth)
+        ax1.plot([0.2,3.4],[0.,0.],
+                 linestyle=axis_linestyle, color=axis_color, 
+                 linewidth=axis_linewidth)
 
     # get T-15 camera and plasma contours
     plot_geometry(ax1)
-
-    # plot aim dot
-#    ax1.plot(r_aim[0,0],r_aim[0,1],'*')
-
-
-#    for tr in traj_list:
-#        if tr.Ebeam == Ebeam and tr.UA2 == UA2:
-#            for i in tr.Fan:
-#                ax1.plot(i[:,0], i[:,1],color='r')
-#            #plot plates
-#            ax1.plot(A2_edges[0][[0,3],0],A2_edges[0][[0,3],1],  color='k', linewidth = 2)
-#            ax1.plot(A2_edges[1][[0,3],0],A2_edges[1][[0,3],1],  color='k', linewidth = 2)
-#            ax1.fill(B2_edges[0][:,0], B2_edges[0][:,1], fill=False, hatch='//', linewidth = 2)
-#            ax1.plot(tr.RV_Prim[:,0], tr.RV_Prim[:,1], color='k',  linewidth = 2)
 
     #plot plates
     ax1.plot(A2_edges[0][[0,3],0],A2_edges[0][[0,3],1],  color='k', linewidth = 2)
@@ -561,26 +654,28 @@ def plot_fan_xy(traj_list, r_aim, A2_edges, B2_edges,
 
     for tr in traj_list:
         if tr.Ebeam == Ebeam and tr.UA2 == UA2:
+            #plot plates
+            ax1.plot(A2_edges[0][[0,3],0],A2_edges[0][[0,3],1],
+                     color='k', linewidth = 2)
+            ax1.plot(A2_edges[1][[0,3],0],A2_edges[1][[0,3],1],
+                     color='k', linewidth = 2)
+            ax1.fill(B2_edges[0][:,0], B2_edges[0][:,1], fill=False,
+                     hatch='//', linewidth = 2)
 
-#            ax1.plot(tr.RV_Sec[:,0], tr.RV_Sec[:,1],color='r')
-#            index = np.where(np.round(tr.RV_Prim[:,0],3) == np.round(tr.RV_Sec[0,0],3))[0][0]
-            index = np.where(np.round(tr.RV_Prim[:,0],3) == np.round(tr.Fan[15][0,0],3))[0][0] + 1
-            ax1.plot(tr.RV_Prim[:,0][:index],
-                     tr.RV_Prim[:,1][:index],
-                     color='k',  linewidth = 2)
+            ax1.plot(tr.RV_Prim[:,0], tr.RV_Prim[:,1],color='k')
 
-            ax1.plot(tr.Fan[15][:,0], tr.Fan[15][:,1],color='r')
+            last_points = []
+            for idx in range(len(tr.Fan)):
+                if idx % 2:
+                    i = tr.Fan[idx]
+                    ax1.plot(i[:,0], i[:,1],color='r')
+                    last_points.append(i[-1, :])
+            last_points = np.array(last_points)
 
-#    ax1.set_title('E={} keV, UA2={} kV, Btor = {} T, Ipl = {} MA'.format(tr.Ebeam,tr.UA2, Btor, Ipl), fontsize=20)
+    # plot aim dot
+    ax1.plot(r_aim[0,0],r_aim[0,1],'*')
 
-#    # these are matplotlib.patch.Patch properties
-#    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-#    # place a text box in upper left in axes coords
-#    ax1.text(0.5, 0.5, textstr, transform=ax1.transAxes, fontsize=18,
-#            verticalalignment='top', bbox=props)
-
-    ax1.set(xlim=(0.9, 4.28), ylim=(-1, 1.5), autoscale_on=False)
-
+    ax1.set(xlim=(1.25, 3.5), ylim=(-0.75, 1.5), autoscale_on=False)
 
 # %%
 def plot_scan(traj_list, r_aim,A2_edges, B2_edges,
@@ -660,7 +755,9 @@ def plot_scan(traj_list, r_aim,A2_edges, B2_edges,
 # %%
 def plot_scan_xy(traj_list, r_aim, A2_edges, B2_edges,
               Ebeam, Btor, Ipl,
-              tick_width=2, axis_labelsize=18, title_labelsize=18):
+              tick_width=2, font_size=24, title_labelsize=18,
+              axis_enabled = True,
+              plot_ionization_line = True):
 
     '''
     plot scan for one beam with particular energy in 2 planes: xy, xz
@@ -684,15 +781,28 @@ def plot_scan_xy(traj_list, r_aim, A2_edges, B2_edges,
     ax1.minorticks_on() # make secondary ticks on axes
     ax1.grid(which='minor', color = 'tab:gray', linestyle = ':') # draw secondary grid
 
-    # Axis
-    ax1.xaxis.set_tick_params(width=tick_width) # increase tick size
-    ax1.yaxis.set_tick_params(width=tick_width)
-    ax1.set_xlabel('X (m)', fontsize=16)
-    ax1.set_ylabel('Y (m)', fontsize=16)
+    # Fonts and ticks
+    plt.tick_params(axis='both', which='major', labelsize=font_size) # increase label font size
+    ax1.xaxis.set_tick_params(width=2) # increase tick size
+    ax1.yaxis.set_tick_params(width=2)
+    ax1.set_xlabel('X (m)', fontsize=font_size)
+    ax1.set_ylabel('Y (m)', fontsize=font_size)
 
+    # plot axis
+    if axis_enabled:
+        axis_linewidth = 1.5
+        axis_color = 'k'
+        axis_linestyle = '--'
+        ax1.plot([1.5,1.5],[-3,2.4], 
+                 linestyle=axis_linestyle, color=axis_color, 
+                 linewidth=axis_linewidth)
+        ax1.plot([0.2,3.4],[0.,0.],
+                 linestyle=axis_linestyle, color=axis_color, 
+                 linewidth=axis_linewidth)
 
     # get T-15 camera and plasma contours
     plot_geometry(ax1)
+    
     # plot aim dot
     ax1.plot(r_aim[0,0],r_aim[0,1],'*')
 
@@ -702,7 +812,8 @@ def plot_scan_xy(traj_list, r_aim, A2_edges, B2_edges,
         if traj_list[i].Ebeam == Ebeam:
             A2list.append(traj_list[i].UA2)
             try:
-                RV_sec_first = np.vstack((RV_sec_first, traj_list[i].RV_Sec[0,:2]))
+                RV_sec_first = np.vstack((RV_sec_first, 
+                                          traj_list[i].RV_Sec[0,:2]))
             except UnboundLocalError:
                 RV_sec_first = traj_list[i].RV_Sec[0,:2]
 
@@ -723,8 +834,8 @@ def plot_scan_xy(traj_list, r_aim, A2_edges, B2_edges,
             ax1.plot(traj_list[i].RV_Prim[:,0], traj_list[i].RV_Prim[:,1], color='k')
             ax1.plot(traj_list[i].RV_Sec[:,0], traj_list[i].RV_Sec[:,1], color='r')
 
-
-    ax1.plot(RV_sec_first[:,0],RV_sec_first[:,1],'o', color='darkred', linestyle='--' )
+    if plot_ionization_line:
+        ax1.plot(RV_sec_first[:,0],RV_sec_first[:,1],'o', color='darkred', linestyle='--' )
 
     ax1.set(xlim=(1.25, 3.5), ylim=(-0.75, 1.5), autoscale_on=False)
 #    ax1.set(xlim=(1.0, 2.5), ylim=(-0.5, 1.1), autoscale_on=False)
@@ -933,7 +1044,8 @@ def plot_grid(traj_list, r_aim, Btor, Ipl,
 #    ax1.set(xlim=(0.9, 4.28), ylim=(-1, 1.5), autoscale_on=False)
 
 #%%
-def plot_grid_xy(traj_list, r_aim, Btor, Ipl, legend=False, zoom=True,
+def plot_grid_xy(traj_list, r_aim, Btor, Ipl, 
+                 legend=False, zoom=True, axis_enabled=True,
                  font_size = 24,
                  linestyle_A2='--', linestyle_E='-', 
                  marker_A2='*', marker_E='p',
@@ -968,6 +1080,18 @@ def plot_grid_xy(traj_list, r_aim, Btor, Ipl, legend=False, zoom=True,
 
 #    #get T-15 camera and plasma contours
     plot_geometry(ax1)
+
+#  # plot axis
+    if axis_enabled:
+        axis_linewidth = 1.5
+        axis_color = 'k'
+        axis_linestyle = '--'
+        ax1.plot([1.5,1.5],[-3,2.4], 
+                 linestyle=axis_linestyle, color=axis_color, 
+                 linewidth=axis_linewidth)
+        ax1.plot([0.2,3.4],[0.,0.],
+                 linestyle=axis_linestyle, color=axis_color, 
+                 linewidth=axis_linewidth)
 
     # get the list of A2 and Ebeam
     A2list = []
@@ -1035,11 +1159,17 @@ def plot_grid_xy(traj_list, r_aim, Btor, Ipl, legend=False, zoom=True,
 #    ax1.plot(r_aim[0,0],r_aim[0,1],'*')
 
 
+    
     if legend:
         ax1.legend(title='Tl', fontsize = font_size, title_fontsize = font_size+8)
     if zoom:
-        ax1.set(xlim=(1.0, 2.5), ylim=(-0.5, 1.1), autoscale_on=False)
+        ax1.set(xlim=(1.3, 2.5), ylim=(-0.4, 1.1))
+        
+        #xvalues = np.arange(1.3, 2.5, 0.5)
+        #ax1.set_xticks(xvalues)
+        
 #        ax1.set(xlim=(0, 3), ylim=(-0.4, 2), autoscale_on=False)
+        
 
     plt.show()
     
